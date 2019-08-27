@@ -29,6 +29,9 @@ bool bVerticalMotorEnable = false;
 int gVDelay = 2000;
 int gVDirection = 0;
 
+int motor_up_pi_state = 0;
+int motor_down_pi_state = 0;
+
 int controlVerticalMotor(int steps, int dir, int delay) {
 
     LOGD("controlHorizontalMotor step: %d, direction: %d, delay %d", steps, dir, delay);
@@ -50,18 +53,21 @@ int controlVerticalMotor(int steps, int dir, int delay) {
     controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
     while (steps--) {
 
-        if (dir == MOTRO_DIRECTION_DOWN) {
-            if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_1, 0) == 1) {
-                LOGE("Reach down pi");
-                break;
+        if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
+            if (dir == MOTOR_DIRECTION_UP) {
+                if (motor_down_pi_state == 0) {
+                    motor_up_pi_state = 1;
+                    break;
+                }
+            } else if (dir == MOTOR_DIRECTION_DOWN) {
+                if (motor_up_pi_state == 0) {
+                    motor_down_pi_state = 1;
+                    break;
+                }
             }
-
-        }
-        else if (dir == MOTOR_DIRECTION_UP){
-            if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
-                LOGE("Reach up pi");
-                break;
-            }
+        } else {
+            motor_up_pi_state = 0;
+            motor_down_pi_state = 0;
         }
 
         gpioLevel = !gpioLevel;
@@ -129,19 +135,21 @@ int startVMotorRunning() {
      controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
 
      while (true) {
-
-         if (dir == MOTRO_DIRECTION_DOWN) {
-             if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_1, 0) == 1) {
-                 LOGE("Reach down pi");
-                 continue;
+         if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
+             if (dir == MOTOR_DIRECTION_UP) {
+                 if (motor_down_pi_state == 0) {
+                     motor_up_pi_state = 1;
+                     continue;
+                 }
+             } else if (dir == MOTOR_DIRECTION_DOWN) {
+                 if (motor_up_pi_state == 0) {
+                     motor_down_pi_state = 1;
+                     continue;
+                 }
              }
-
-         }
-         else if (dir == MOTOR_DIRECTION_UP){
-             if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
-                 LOGE("Reach up pi");
-                 continue;
-             }
+         } else {
+             motor_up_pi_state = 0;
+             motor_down_pi_state = 0;
          }
 
          gpioLevel = !gpioLevel;

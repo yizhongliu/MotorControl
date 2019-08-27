@@ -61,7 +61,7 @@ struct motor_a3901{
 #define MOTOR_DIRECTION_LEFT 1
 #define MOTOR_DIRECTION_RIGHT 0
 #define MOTOR_DIRECTION_UP 1
-#define MOTRO_DIRECTION_DOWN 0
+#define MOTOR_DIRECTION_DOWN 0
 
 int controlHorizontalMotor(int steps, int dir, int delay);
 int setHorizontalMotorSpeed(int delay);
