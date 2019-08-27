@@ -14,6 +14,7 @@
 
 #define MOTOR_DRV_UP_DOWN    "/dev/motor_gpio_up_down"
 
+
 #define  LOG_TAG    "vertical_motor"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -48,16 +49,30 @@ int controlVerticalMotor(int steps, int dir, int delay) {
     int gpioLevel = 0;
     controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
     while (steps--) {
+
+        if (dir == MOTRO_DIRECTION_DOWN) {
+            if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_1, 0) == 1) {
+                LOGE("Reach down pi");
+                break;
+            }
+
+        }
+        else if (dir == MOTOR_DIRECTION_UP){
+            if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
+                LOGE("Reach up pi");
+                break;
+            }
+        }
+
         gpioLevel = !gpioLevel;
     	controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
-    	tv.tv_sec = 0;
-    	tv.tv_usec = delay / 2;
-    	select(0, NULL, NULL, NULL, &tv);
+
+    	motorDelay(delay);
+
     	gpioLevel = !gpioLevel;
     	controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
-    	tv.tv_sec = 0;
-    	tv.tv_usec = delay;
-    	select(0, NULL, NULL, NULL, &tv);
+
+    	motorDelay(delay);
 
         if (bVerticalMotorEnable == false) {
             break;
@@ -114,16 +129,30 @@ int startVMotorRunning() {
      controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
 
      while (true) {
+
+         if (dir == MOTRO_DIRECTION_DOWN) {
+             if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_1, 0) == 1) {
+                 LOGE("Reach down pi");
+                 continue;
+             }
+
+         }
+         else if (dir == MOTOR_DIRECTION_UP){
+             if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
+                 LOGE("Reach up pi");
+                 continue;
+             }
+         }
+
          gpioLevel = !gpioLevel;
          controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
-         tv.tv_sec = 0;
-         tv.tv_usec = delay / 2;
-         select(0, NULL, NULL, NULL, &tv);
+
+         motorDelay(delay);
+
          gpioLevel = !gpioLevel;
          controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
-         tv.tv_sec = 0;
-         tv.tv_usec = delay;
-         select(0, NULL, NULL, NULL, &tv);
+
+         motorDelay(delay);
 
          if (dir != getVerticalMotorDirection()) {
              dir = getVerticalMotorDirection();
@@ -154,3 +183,4 @@ int stopVMotorRunning() {
 bool getVMotorEnable() {
     return bVerticalMotorEnable;
 }
+

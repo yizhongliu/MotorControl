@@ -66,34 +66,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mMotorDataList.clear();
 
 
-        mMotorDataList.add(new MotorData(1000, 0, 500, 0, 500));
-        mMotorDataList.add(new MotorData(1000, 0, 500, 0, 600));
-        mMotorDataList.add(new MotorData(1000, 0, 500, 0, 700));
-        mMotorDataList.add(new MotorData(1000, 0, 500, 0, 800));
-        mMotorDataList.add(new MotorData(1000, 0, 500, 0, 900));
+        mMotorDataList.add(new MotorData(500, 0, 1000, 0, 5000));
+        mMotorDataList.add(new MotorData(500, 0, 1000, 0, 5000));
+        mMotorDataList.add(new MotorData(500, 0, 1000, 0, 5000));
+        mMotorDataList.add(new MotorData(500, 0, 1000, 0, 5000));
+        mMotorDataList.add(new MotorData(500, 0, 1000, 0, 5000));
 
-        mMotorDataList.add(new MotorData(1000, 0, 500, 1, 900));
-        mMotorDataList.add(new MotorData(1000, 0, 500, 1, 800));
-        mMotorDataList.add(new MotorData(1000, 0, 500, 1, 700));
-        mMotorDataList.add(new MotorData(1000, 0, 500, 1, 600));
-        mMotorDataList.add(new MotorData(1000, 0, 500, 1, 500));
-
-
+        mMotorDataList.add(new MotorData(500, 0, 1000, 1, 5000));
+        mMotorDataList.add(new MotorData(500, 0, 1000, 1, 5000));
+        mMotorDataList.add(new MotorData(500, 0, 1000, 1, 5000));
+        mMotorDataList.add(new MotorData(500, 0, 1000, 1, 5000));
+        mMotorDataList.add(new MotorData(500, 0, 1000, 1, 5000));
 
 
-        mMotorDataList.add(new MotorData(4000, 1, 100, 1, 0));
-   //     mMotorDataList.add(new MotorData(1000, 0, 1000, 1, 500));
-    //    mMotorDataList.add(new MotorData(1000, 0, 500, 1, 300));
 
 
-        mMotorDataList.add(new MotorData(1000, 0, 500, 0, 500));
-        mMotorDataList.add(new MotorData(1000, 0, 1000, 0, 500));
-        mMotorDataList.add(new MotorData(1000, 0, 500, 0, 300));
-
-
-        mMotorDataList.add(new MotorData(1000, 0, 500, 1, 500));
-        mMotorDataList.add(new MotorData(1000, 0, 1000, 1, 500));
-        mMotorDataList.add(new MotorData(1000, 0, 500, 1, 300));
+//        mMotorDataList.add(new MotorData(4000, 1, 100, 1, 0));
+//   //     mMotorDataList.add(new MotorData(1000, 0, 1000, 1, 500));
+//    //    mMotorDataList.add(new MotorData(1000, 0, 500, 1, 300));
+//
+//
+//        mMotorDataList.add(new MotorData(1000, 0, 500, 0, 500));
+//        mMotorDataList.add(new MotorData(1000, 0, 1000, 0, 500));
+//        mMotorDataList.add(new MotorData(1000, 0, 500, 0, 300));
+//
+//
+//        mMotorDataList.add(new MotorData(1000, 0, 500, 1, 500));
+//        mMotorDataList.add(new MotorData(1000, 0, 1000, 1, 500));
+//        mMotorDataList.add(new MotorData(1000, 0, 500, 1, 300));
 
     }
 
@@ -182,41 +182,43 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.button1:
-                MotorControl.controlMotor(MotorControl.HMotor, 10000, 1, 200);
+                MotorControl.controlMotor(MotorControl.HMotor, 1000, 1, 2000);
                 break;
             case R.id.button2:
-                MotorControl.controlMotor(MotorControl.HMotor,10000, 0, 200);
+                MotorControl.controlMotor(MotorControl.HMotor,1000, 0, 2000);
                 break;
             case R.id.button3:
+                MotorControl.controlMotor(MotorControl.VMotor,200, 1, 2000 );
           //      MotorControl.controlMotor(MotorControl.VMotor, 3000, 1, 500);
-                cmdIndex = 0;
-                MotorControl.setMotorSpeed(MotorControl.VMotor, 500);
-                MotorControl.setMotorDirection(MotorControl.VMotor, direction);
-
-                new Thread() {
-                    @Override
-                    public void run() {
-                        MotorControl.startMotorRunning(MotorControl.VMotor);
-                    }
-                }.start();
-
-                mHandler.sendEmptyMessageDelayed(MSG_CONTROL_H_MOTOR, delayTime[cmdIndex]);
-                cmdIndex++;
+//                cmdIndex = 0;
+//                MotorControl.setMotorSpeed(MotorControl.VMotor, 500);
+//                MotorControl.setMotorDirection(MotorControl.VMotor, direction);
+//
+//                new Thread() {
+//                    @Override
+//                    public void run() {
+//                        MotorControl.startMotorRunning(MotorControl.VMotor);
+//                    }
+//                }.start();
+//
+//                mHandler.sendEmptyMessageDelayed(MSG_CONTROL_H_MOTOR, delayTime[cmdIndex]);
+//                cmdIndex++;
                 break;
             case R.id.button4:
+                MotorControl.controlMotor(MotorControl.VMotor,200, 0, 2000 );
                 //MotorControl.controlMotor(MotorControl.VMotor, 3000, 0, 500);
-                cmdIndex = 0;
-                MotorControl.setMotorSpeed(MotorControl.HMotor, 500);
-                MotorControl.setMotorDirection(MotorControl.HMotor, direction);
-
-                new Thread() {
-                    @Override
-                    public void run() {
-                        MotorControl.startMotorRunning(MotorControl.HMotor);
-                    }
-                }.start();
-
-                mHandler.sendEmptyMessageDelayed(MSG_CONTROL_H_MOTOR, delayTime[cmdIndex]);
+//                cmdIndex = 0;
+//                MotorControl.setMotorSpeed(MotorControl.HMotor, 500);
+//                MotorControl.setMotorDirection(MotorControl.HMotor, direction);
+//
+//                new Thread() {
+//                    @Override
+//                    public void run() {
+//                        MotorControl.startMotorRunning(MotorControl.HMotor);
+//                    }
+//                }.start();
+//
+//                mHandler.sendEmptyMessageDelayed(MSG_CONTROL_H_MOTOR, delayTime[cmdIndex]);
                 cmdIndex++;
                 break;
             case R.id.button5:

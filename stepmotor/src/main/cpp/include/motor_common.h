@@ -24,6 +24,10 @@ struct motor_a3901{
 #define MOTO_ENABLE_UP_DOWN    66
 #define MOTO_STEP_UP_DOWN 		65
 #define MOTO_DIR_UP_DOWN 		67
+
+//#define MOTO_ENABLE_UP_DOWN    127
+//#define MOTO_STEP_UP_DOWN 		126
+//#define MOTO_DIR_UP_DOWN 		125
 //#define MOTO_M0 84
 //#define MOTO_M1 86
 #define MOTO_SENSOR_UP_DOWN_1 68
@@ -53,6 +57,12 @@ struct motor_a3901{
 #define MOTOR_ENABLE 1
 #define MOTOR_DISABLE 0
 
+
+#define MOTOR_DIRECTION_LEFT 1
+#define MOTOR_DIRECTION_RIGHT 0
+#define MOTOR_DIRECTION_UP 1
+#define MOTRO_DIRECTION_DOWN 0
+
 int controlHorizontalMotor(int steps, int dir, int delay);
 int setHorizontalMotorSpeed(int delay);
 int setHorizontalMotorDirection(int direction);
@@ -68,5 +78,7 @@ int stopVMotorRunning();
 bool getVMotorEnable();
 
 int controlMotorDev(int fd, int gpio_num, int gpio_state);
+int getPiState(int fd, int gpio_num, int gpio_state);
+void motorDelay(int delay);
 
 #endif

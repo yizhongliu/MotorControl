@@ -29,6 +29,14 @@ bool bHorizontalMotorEnable = false;
 int gHDelay = 2000;
 int gHDirection = 0;
 
+static int motor_left_pi_state = 0;
+static int motor_right_pi_state = 0;
+
+static int getLeftRightPiState(int fd, int gpio_num, int gpio_state)
+{
+    return getPiState(fd, gpio_num, gpio_state);
+}
+
 int controlHorizontalMotor(int steps, int dir, int delay) {
 
     LOGD("controlHorizontalMotor step: %d, direction: %d, delay %d", steps, dir, delay);
@@ -49,16 +57,42 @@ int controlHorizontalMotor(int steps, int dir, int delay) {
     int gpioLevel = 0;
     controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, gpioLevel);
     while (steps--) {
+
+        if (dir == MOTOR_DIRECTION_LEFT) {
+            if (getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1) {
+                if(motor_right_pi_state == 0){
+                    motor_left_pi_state = 1;
+                    LOGE("Reach left pi");
+                    break;
+                }
+            }
+            else{
+                motor_right_pi_state = 0;
+                motor_left_pi_state = 0;
+            }
+        } else if (dir == MOTOR_DIRECTION_RIGHT) {
+            if(getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1){
+                if(motor_left_pi_state == 0){
+                    motor_right_pi_state = 1;
+                    LOGE("Reach right pi");
+                    break;
+                }
+            }
+            else{
+                motor_right_pi_state = 0;
+                motor_left_pi_state = 0;
+            }
+        }
+
         gpioLevel = !gpioLevel;
     	controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, gpioLevel);
-    	tv.tv_sec = 0;
-    	tv.tv_usec = delay / 2;
-    	select(0, NULL, NULL, NULL, &tv);
+
+    	motorDelay(delay);
+
     	gpioLevel = !gpioLevel;
     	controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, gpioLevel);
-    	tv.tv_sec = 0;
-    	tv.tv_usec = delay;
-    	select(0, NULL, NULL, NULL, &tv);
+
+    	motorDelay(delay);
 
         if (bHorizontalMotorEnable == false) {
             break;
@@ -114,16 +148,43 @@ int startHMotorRunning() {
     controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, gpioLevel);
 
      while (true) {
+
+         if (dir == MOTOR_DIRECTION_LEFT) {
+             if (getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1) {
+                 if(motor_right_pi_state == 0){
+                     motor_left_pi_state = 1;
+                     LOGE("Reach left pi");
+                     continue;
+                 }
+             }
+             else{
+                 motor_right_pi_state = 0;
+                 motor_left_pi_state = 0;
+             }
+         } else if (dir == MOTOR_DIRECTION_RIGHT) {
+             if(getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1){
+                 if(motor_left_pi_state == 0){
+                     motor_right_pi_state = 1;
+                     LOGE("Reach right pi");
+                     continue;
+                 }
+             }
+             else{
+                 motor_right_pi_state = 0;
+                 motor_left_pi_state = 0;
+             }
+         }
+
+
          gpioLevel = !gpioLevel;
          controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, gpioLevel);
-         tv.tv_sec = 0;
-         tv.tv_usec = delay / 2;
-         select(0, NULL, NULL, NULL, &tv);
+
+         motorDelay(delay);
+
          gpioLevel = !gpioLevel;
          controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, gpioLevel);
-         tv.tv_sec = 0;
-         tv.tv_usec = delay;
-         select(0, NULL, NULL, NULL, &tv);
+
+         motorDelay(delay);
 
          if (dir != getHorizontalMotorDirection()) {
              dir = getHorizontalMotorDirection();

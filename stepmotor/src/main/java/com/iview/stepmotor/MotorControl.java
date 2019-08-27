@@ -8,11 +8,11 @@ public class MotorControl {
     public static final int HMotor = 1;
     public static final int VMotor = 2;
 
-    public static final int HMotorLeftDirection = 0;
-    public static final int HMotorRightDirection = 1;
+    public static final int HMotorLeftDirection = 1;
+    public static final int HMotorRightDirection = 0;
 
-    public static final int VMotorUpDirection = 0;
-    public static final int VMotorDownDirection = 1;
+    public static final int VMotorUpDirection = 1;
+    public static final int VMotorDownDirection = 0;
 
     public static int controlMotor(int motorId, int steps, int dir, int delay) {
         return nativeControlMotor(motorId, steps, dir, delay);

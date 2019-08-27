@@ -28,3 +28,30 @@ int controlMotorDev(int fd, int gpio_num, int gpio_state) {
 
     return 0;
 }
+
+int getPiState(int fd, int gpio_num, int gpio_state)
+{
+    struct motor_a3901 userdata_motor;
+    userdata_motor.gpio_num   = gpio_num;
+    userdata_motor.gpio_state = gpio_state;
+
+    if((ioctl(fd, VS_GET_GPIO, &userdata_motor)) < 0)
+    {
+        LOGE("%s VIDIOC_DQBUF motor error!\n", __FUNCTION__);
+        return -1;
+    }
+    return userdata_motor.gpio_state;
+}
+
+void motorDelay(int delay) {
+    static struct timeval start;
+    static struct timeval end;
+
+    gettimeofday(&start, NULL); //gettimeofday(&start,&tz);结果一样
+    while(1){
+        gettimeofday(&end, NULL);
+        if(((end.tv_sec-start.tv_sec)*1000000+(end.tv_usec-start.tv_usec)) >=  delay){
+            break;
+        }
+    }
+}
