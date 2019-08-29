@@ -44,8 +44,8 @@ int getPiState(int fd, int gpio_num, int gpio_state)
 }
 
 void motorDelay(int delay) {
-    static struct timeval start;
-    static struct timeval end;
+    struct timeval start;
+    struct timeval end;
 
     gettimeofday(&start, NULL); //gettimeofday(&start,&tz);结果一样
     while(1){
