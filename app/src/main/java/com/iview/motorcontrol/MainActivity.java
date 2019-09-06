@@ -182,13 +182,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.button1:
-                MotorControl.controlMotor(MotorControl.HMotor, 1000, 1, 2000);
+                MotorControl.controlMotor(MotorControl.HMotor, 10000, 1, 500);
                 break;
             case R.id.button2:
-                MotorControl.controlMotor(MotorControl.HMotor,1000, 0, 2000);
+                MotorControl.controlMotor(MotorControl.HMotor,10000, 0, 500);
                 break;
             case R.id.button3:
-                MotorControl.controlMotor(MotorControl.VMotor,200, 1, 2000 );
+                MotorControl.controlMotor(MotorControl.VMotor,10000, 1, 1000 );
           //      MotorControl.controlMotor(MotorControl.VMotor, 3000, 1, 500);
 //                cmdIndex = 0;
 //                MotorControl.setMotorSpeed(MotorControl.VMotor, 500);
@@ -205,7 +205,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                cmdIndex++;
                 break;
             case R.id.button4:
-                MotorControl.controlMotor(MotorControl.VMotor,200, 0, 2000 );
+                MotorControl.controlMotor(MotorControl.VMotor,10000, 0, 1000 );
                 //MotorControl.controlMotor(MotorControl.VMotor, 3000, 0, 500);
 //                cmdIndex = 0;
 //                MotorControl.setMotorSpeed(MotorControl.HMotor, 500);

@@ -1,1 +1,1 @@
-include ':app', ':stepmotor'
+include ':app', ':stepmotor', ':mirromove', ':mirrorclient'

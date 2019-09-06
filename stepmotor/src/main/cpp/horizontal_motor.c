@@ -154,6 +154,11 @@ int startHMotorRunning() {
                  if(motor_right_pi_state == 0){
                      motor_left_pi_state = 1;
                      LOGE("Reach left pi");
+
+                     if (bHorizontalMotorEnable == false) {
+                         break;
+                     }
+
                      continue;
                  }
              }
@@ -166,6 +171,11 @@ int startHMotorRunning() {
                  if(motor_left_pi_state == 0){
                      motor_right_pi_state = 1;
                      LOGE("Reach right pi");
+
+                     if (bHorizontalMotorEnable == false) {
+                         break;
+                     }
+
                      continue;
                  }
              }

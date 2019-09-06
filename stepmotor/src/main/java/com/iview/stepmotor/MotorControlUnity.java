@@ -59,6 +59,13 @@ public class MotorControlUnity extends UnityPlayerActivity {
                             return;
                         }
 
+                        Log.e(TAG, "execute cmdindex :" + cmdIndex);
+                        Log.e(TAG, "execute hSpeed:" + mMotorDataList.get(cmdIndex).hSpeed +
+                                        ", hDirection: " + mMotorDataList.get(cmdIndex).hDirection +
+                                        ", vSpeed:" + mMotorDataList.get(cmdIndex).vSpeed +
+                                        ", vDirection: " + mMotorDataList.get(cmdIndex).vDirection +
+                                         ", running time:" + mMotorDataList.get(cmdIndex).runningTime);
+
                         MotorControl.setMotorSpeed(MotorControl.HMotor, mMotorDataList.get(cmdIndex).hSpeed);
                         MotorControl.setMotorDirection(MotorControl.HMotor, mMotorDataList.get(cmdIndex).hDirection);
 

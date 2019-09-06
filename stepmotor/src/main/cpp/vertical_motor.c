@@ -56,11 +56,13 @@ int controlVerticalMotor(int steps, int dir, int delay) {
         if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
             if (dir == MOTOR_DIRECTION_UP) {
                 if (motor_down_pi_state == 0) {
+                    LOGE("reach up pi");
                     motor_up_pi_state = 1;
                     break;
                 }
             } else if (dir == MOTOR_DIRECTION_DOWN) {
                 if (motor_up_pi_state == 0) {
+                    LOGE("reach down pi");
                     motor_down_pi_state = 1;
                     break;
                 }
@@ -139,11 +141,21 @@ int startVMotorRunning() {
              if (dir == MOTOR_DIRECTION_UP) {
                  if (motor_down_pi_state == 0) {
                      motor_up_pi_state = 1;
+
+                     if (bVerticalMotorEnable == false) {
+                         break;
+                     }
+
                      continue;
                  }
              } else if (dir == MOTOR_DIRECTION_DOWN) {
                  if (motor_up_pi_state == 0) {
                      motor_down_pi_state = 1;
+
+                     if (bVerticalMotorEnable == false) {
+                         break;
+                     }
+
                      continue;
                  }
              }
