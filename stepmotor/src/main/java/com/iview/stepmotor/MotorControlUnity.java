@@ -262,4 +262,12 @@ public class MotorControlUnity extends UnityPlayerActivity {
             this.vSpeed = vSpeed;
         }
     }
+
+    /**
+     * 开关投影灯
+     * @param enable : 0：关  1：开
+     */
+    public void switchProjector(int enable) {
+        MotorControl.swtichProjector(enable);
+    }
 }

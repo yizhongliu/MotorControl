@@ -38,11 +38,17 @@ public class MotorControl {
         return nativeGetMotorEnable(motorId);
     }
 
+    public static void swtichProjector(int enable) {
+        nativeSwitchProjector(enable);
+    }
+
     private native static int nativeControlMotor(int motorId, int steps, int dir, int delay);
     private native static int nativeSetMotorSpeed(int motorId, int delay);
     private native static int nativeSetMotorDirection(int motorId, int direction);
     private native static int nativeStartMotorRunning(int motorId);
     private native static int nativeStopMotorRunning(int motorId);
     private native static boolean nativeGetMotorEnable(int motorId);
+
+    private native static void nativeSwitchProjector(int enable);
 
 }

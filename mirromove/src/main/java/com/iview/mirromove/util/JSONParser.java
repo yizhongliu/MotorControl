@@ -38,4 +38,66 @@ public class JSONParser {
 
         return action;
     }
+
+    public int getAngle() {
+        int angle = 0;
+
+        JSONObject jsonObject = null;
+        if (mJsonObject != null) {
+            try {
+                jsonObject = mJsonObject .getJSONObject("arg");
+                angle = jsonObject.optInt("angle");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return angle;
+    }
+
+    public double getRotation() {
+        double rotation = 0.0;
+        JSONObject jsonObject = null;
+        if (mJsonObject != null) {
+            try {
+                jsonObject = mJsonObject .getJSONObject("arg");
+                rotation = jsonObject.optDouble("rotation");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return rotation;
+    }
+
+    public String getUrl() {
+        String url = null;
+        JSONObject jsonObject = null;
+        if (mJsonObject != null) {
+            try {
+                jsonObject = mJsonObject .getJSONObject("arg");
+                url = jsonObject.optString("url");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return url;
+    }
+
+    public int getShowTime() {
+        int showTime = 0;
+        JSONObject jsonObject = null;
+        if (mJsonObject != null) {
+            try {
+                jsonObject = mJsonObject .getJSONObject("arg");
+                showTime = jsonObject.optInt("imgTime");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return showTime;
+    }
+
 }

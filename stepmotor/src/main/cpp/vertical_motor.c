@@ -54,6 +54,7 @@ int controlVerticalMotor(int steps, int dir, int delay) {
     while (steps--) {
 
         if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
+            LOGE("reach up/down pi");
             if (dir == MOTOR_DIRECTION_UP) {
                 if (motor_down_pi_state == 0) {
                     LOGE("reach up pi");

@@ -24,7 +24,9 @@ add_library( # Sets the name of the library.
              src/main/cpp/vertical_motor.c
              src/main/cpp/horizontal_motor.c
              src/main/cpp/motor_common.c
-             src/main/cpp/step_motor.cpp)
+             src/main/cpp/dlp343x.c
+             src/main/cpp/step_motor.cpp
+             src/main/cpp/native_lib.cpp)
 
 
 # Searches for a specified prebuilt library and stores the path as a

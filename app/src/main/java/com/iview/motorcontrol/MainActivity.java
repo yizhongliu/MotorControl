@@ -25,6 +25,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Button button4;
     Button button5;
 
+    Button projectorSwitchButton;
+
     HandlerThread mHandlerThread;
     Handler mHandler;
 
@@ -60,6 +62,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         button5 = findViewById(R.id.button5);
         button5.setOnClickListener(this);
+
+        projectorSwitchButton = findViewById(R.id.projectorSwitch);
+        projectorSwitchButton.setOnClickListener(this);
     }
 
     private void initMotorData() {
@@ -250,6 +255,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 mHandler.sendEmptyMessageDelayed(MSG_CONTROL_D_MOTOR, 0);
 
+                break;
+
+            case R.id.projectorSwitch:
+                MotorControl.swtichProjector(0);
+
+                mHandler.postDelayed((new Runnable() {
+                    @Override
+                    public void run() {
+                        MotorControl.swtichProjector(1);
+                    }
+                }), 4000);
                 break;
         }
     }
