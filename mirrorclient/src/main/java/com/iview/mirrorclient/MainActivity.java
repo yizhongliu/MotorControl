@@ -3,6 +3,9 @@ package com.iview.mirrorclient;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -18,6 +21,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private final static String TAG = "MainActivity";
 
+    private final static int MSG_NAV_CALLBACK = 0;
+
     private EditText serverIpEdit;
     private EditText serverPortEdit;
 
@@ -26,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private Button imgButton;
     private Button vidButton;
+    private Button paramButton;
 
 
     private Button pathStartButton;
@@ -45,10 +51,46 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button pathPreImageButton;
     private Button pathPreVidButtonn;
 
+    private EditText editText;
+
 
     private TcpClient tcpClient = null;
 
+    private NavController navController;
+    private NavListener navListener;
+
     ExecutorService exec = Executors.newCachedThreadPool();
+
+    public Handler mHandler = new Handler() {
+         public void handleMessage(Message msg) {
+             switch (msg.what) {
+                 case MSG_NAV_CALLBACK:
+                     int angle = msg.getData().getInt("angle");
+
+                     JSONObject jsonObject8 = new JSONObject();
+                     try {
+                         jsonObject8.put("type", "PathPlanning");
+                         jsonObject8.put("action", "Move");
+
+                         JSONObject obj8 = new JSONObject();
+                         obj8.put("angle", angle);
+
+                         jsonObject8.put("arg", obj8);
+                     } catch (Exception e) {
+                         e.printStackTrace();
+                     }
+
+                     final String message2 = jsonObject8.toString();
+                     exec.execute(new Runnable() {
+                         @Override
+                         public void run() {
+                             tcpClient.send(message2);
+                         }
+                     });
+                     break;
+             }
+         }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +106,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         startButton = findViewById(R.id.startButton);
         startButton.setOnClickListener(this);
-        sendButton = findViewById(R.id.sendButton);
-        sendButton.setOnClickListener(this);
+
 
         imgButton = findViewById(R.id.imgButton);
         imgButton.setOnClickListener(this);
@@ -101,6 +142,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         pathPreImageButton.setOnClickListener(this);
         pathPreVidButtonn = findViewById(R.id.preVidButton);
         pathPreVidButtonn.setOnClickListener(this);
+
+        paramButton = findViewById(R.id.setParam);
+        paramButton.setOnClickListener(this);
+
+        navController = findViewById(R.id.navController);
+        navListener = new NavListener();
+        navController.setNavCallback(navListener);
+
+        editText = findViewById(R.id.paramEdit);
     }
 
     @Override
@@ -112,19 +162,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 tcpClient = new TcpClient(serverip, serverPort);
                 exec.execute(tcpClient);
                 break;
-            case R.id.sendButton:
-                exec.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        tcpClient.send("test tcp client");
-                    }
-                });
-                break;
             case R.id.imgButton:
                 JSONObject jsonObject = new JSONObject();
                 try {
                     jsonObject.put("type", "Control");
-                    jsonObject.put("action", "ShowImage");
+                    jsonObject.put("action", "Show");
+
+                    JSONObject imgObj = new JSONObject();
+                    imgObj.put("url", "test.jpg");
+                    imgObj.put("rotation", 0.0);
+                    imgObj.put("imgTime", -1);
+
+                    jsonObject.put("arg", imgObj);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -142,7 +191,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 JSONObject jsonObject2 = new JSONObject();
                 try {
                     jsonObject2.put("type", "Control");
-                    jsonObject2.put("action", "ShowVideo");
+                    jsonObject2.put("action", "Show");
+
+                    JSONObject imgObj2 = new JSONObject();
+                    imgObj2.put("url", "Billons.mp4");
+                    imgObj2.put("rotation", 0.0);
+                    imgObj2.put("imgTime", -1);
+
+                    jsonObject2.put("arg", imgObj2);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -330,6 +386,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
                 break;
 
+
             case R.id.planRun:
                 JSONObject jsonObject11 = new JSONObject();
                 try {
@@ -368,6 +425,74 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 });
                 break;
+
+            case R.id.setVidButton:
+                JSONObject jsonObject13 = new JSONObject();
+                try {
+                    jsonObject13.put("type", "PathPlanning");
+                    jsonObject13.put("action", "Show");
+
+                    JSONObject obj13 = new JSONObject();
+                    obj13.put("rotation", 0);
+                    obj13.put("url", "Billons.mp4");
+                    obj13.put("imgTime", 5000);
+
+
+                    jsonObject13.put("arg", obj13);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                final String msg13 = jsonObject13.toString();
+                exec.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        tcpClient.send(msg13);
+                    }
+                });
+                break;
+            case R.id.setParam:
+
+                int rotate = Integer.parseInt(editText.getText().toString());
+                JSONObject jsonObject14 = new JSONObject();
+                try {
+                    jsonObject14.put("type", "Control");
+                    jsonObject14.put("action", "SetParam");
+
+                    JSONObject obj14 = new JSONObject();
+                    obj14.put("rotation", rotate);
+
+                    jsonObject14.put("arg", obj14);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                final String msg14 = jsonObject14.toString();
+                exec.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        tcpClient.send(msg14);
+                    }
+                });
+                break;
+        }
+    }
+
+    public class NavListener implements NavController.NavCallback {
+
+        @Override
+        public void onAngleChange(int angle) {
+
+            Log.e(TAG, "onAngleChange");
+            mHandler.removeMessages(MSG_NAV_CALLBACK);
+
+            Message moveMessage = new Message();
+            moveMessage.what = MSG_NAV_CALLBACK;
+            Bundle bundle = new Bundle();
+            bundle.putInt("angle" , angle);
+            moveMessage.setData(bundle);
+
+            mHandler.sendMessage(moveMessage);
         }
     }
 }

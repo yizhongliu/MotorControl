@@ -15,6 +15,7 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.Point;
 import android.net.Network;
 import android.os.Build;
@@ -85,6 +86,11 @@ public class MainActivity extends Activity {
 
     private HandlerThread mBackHandlerThread;
     private Handler mBackHandler;
+
+    private String imageUrl;
+
+    private Matrix matrix = new Matrix();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -232,7 +238,13 @@ public class MainActivity extends Activity {
 
         @Override
         public void onLost(Network netWork) {
-            ipText.setText("没有网络");
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ipText.setText("没有网络");
+                }
+            });
+
             Log.d(TAG, "onLost");
 
             if (socketService != null) {
@@ -492,14 +504,15 @@ public class MainActivity extends Activity {
     public class ControlCallBack implements PlayCallBack {
 
         @Override
-        public void play(final String url, final int time, final double rotation) {
+        public void play(final String url, final int time, final float rotation) {
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    String absUrl =  Environment.getExternalStorageDirectory() + "/" + url;
 
-                    if (MediaFileUtil.isImageFileType(absUrl)) {
+
+                    if (MediaFileUtil.isImageFileType(url)) {
+                        imageUrl =  Environment.getExternalStorageDirectory() + "/" + url;
                         if (bVideoShow) {
                             if (mPlayer != null) {
                                 mPlayer.close();
@@ -510,13 +523,20 @@ public class MainActivity extends Activity {
                         bImageShow = true;
                         //   String path = Environment.getExternalStorageDirectory() + "/Pictures/test11.jpg";
 
-                        Bitmap bitmap = BitmapFactory.decodeFile(absUrl);
+                        Bitmap bitmap = BitmapFactory.decodeFile(imageUrl);
+
+                        matrix.setRotate(rotation);
+                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),bitmap.getHeight(), matrix, true);
+
                         imagePriView.setVisibility(View.VISIBLE);
-                        imagePriView.setRotation((float) rotation);
+
                         imagePriView.setImageBitmap(bitmap);
 
-                        mBackHandler.sendEmptyMessageDelayed(MSG_IMAGE_DISMISS, time);
-                    } else if (MediaFileUtil.isVideoFileType(absUrl)) {
+                        if (time != -1) {
+                            mBackHandler.sendEmptyMessageDelayed(MSG_IMAGE_DISMISS, time);
+                        }
+                    } else if (MediaFileUtil.isVideoFileType(url)) {
+                        String absUrl =  Environment.getExternalStorageDirectory() + "/" + url;
                         //先隐藏图片显示
                         if (bImageShow) {
                             imagePriView.setVisibility(View.INVISIBLE);
@@ -534,8 +554,30 @@ public class MainActivity extends Activity {
                     }
                 }
             });
+        }
+
+        public void setParam(final float rotation) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (bImageShow) {
+                    //    imagePriView.setRotation(rotation);
+
+                        Bitmap bitmap = BitmapFactory.decodeFile(imageUrl);
+
+                   //     Bitmap bitmap = ((BitmapDrawable) getResources().getDrawable(R.drawable.pic)).getBitmap();
+                        // 设置旋转角度
+                        matrix.setRotate(rotation);
 
 
+                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),bitmap.getHeight(), matrix, true);
+
+                        imagePriView.setImageBitmap(bitmap);
+                    } else if (bVideoShow) {
+                        mPlayer.setParam(NativePlayer.PARAM_VDEV_D3D_ROTATE, (int) rotation);
+                    }
+                }
+            });
         }
     }
 

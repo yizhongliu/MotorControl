@@ -17,6 +17,11 @@
 #include "player_jni.h"
 #endif
 
+#define LOG_TAG    "ffplayer"
+#define LOGI(...)  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#define LOGD(...)  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+
 // 内部类型定义
 typedef struct {
     // format
@@ -995,6 +1000,9 @@ void player_setparam(void *hplayer, int id, void *param)
         break;
     case PARAM_VDEV_D3D_ROTATE: {
             double radian = (*(int*)param) * M_PI / 180;
+
+            LOGE("ARAM_VDEV_D3D_ROTATE %lf", radian);
+
             player->init_params.video_owidth = abs((int)(player->vcodec_context->width  * cos(radian)))
                                              + abs((int)(player->vcodec_context->height * sin(radian)));
             player->init_params.video_oheight= abs((int)(player->vcodec_context->width  * sin(radian)))

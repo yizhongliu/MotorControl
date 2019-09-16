@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <android/log.h>
 
-#define MOTOR_DRV_LEFT_RIGHT     "/dev/motor_gpio_left_right"
+
 
 #define  LOG_TAG    "horizontal_motor"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -24,13 +24,11 @@ static int hMotorFd = -1;
 static struct timeval tv;
 static struct timeval ts;
 
-bool bHorizontalMotorEnable = false;
 
 int gHDelay = 2000;
 int gHDirection = 0;
 
-static int motor_left_pi_state = 0;
-static int motor_right_pi_state = 0;
+
 
 static int getLeftRightPiState(int fd, int gpio_num, int gpio_state)
 {

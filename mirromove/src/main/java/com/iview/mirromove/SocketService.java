@@ -188,20 +188,11 @@ public class SocketService extends Service {
         String type = jsonParser.getType();
         String action = jsonParser.getAction();
 
-        if (type.equals(MsgType.TYPE_CONTROL)) {
-            Intent msgIntent = new Intent(MsgType.INTENT_ACTION_MEDIA);
-            msgIntent.putExtra("message", action);
-            if (action.equals(MsgType.ACTION_SHOW_IMAGE)) {
-                LocalBroadcastManager.getInstance(this).sendBroadcast(msgIntent);
-            } else if (action.equals(MsgType.ACTION_SHOW_VIDEO)) {
-                LocalBroadcastManager.getInstance(this).sendBroadcast(msgIntent);
-            }
-        } else if (type.equals(MsgType.TYPE_PATH_PLANNING)) {
+        if (type.equals(MsgType.TYPE_PATH_PLANNING)
+            || (type.equals(MsgType.TYPE_CONTROL))) {
             Intent pathIntent = new Intent(MsgType.INTENT_ACTION_PATH_PLANNING);
             pathIntent.putExtra("message", msg);
             LocalBroadcastManager.getInstance(this).sendBroadcast(pathIntent);
-
-            Log.e(TAG, "receive msg:" + msg);
         }
     }
 }

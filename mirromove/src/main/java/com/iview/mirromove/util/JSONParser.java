@@ -55,13 +55,14 @@ public class JSONParser {
         return angle;
     }
 
-    public double getRotation() {
-        double rotation = 0.0;
+    public float getRotation() {
+        float rotation = 0.0f;
         JSONObject jsonObject = null;
         if (mJsonObject != null) {
             try {
                 jsonObject = mJsonObject .getJSONObject("arg");
-                rotation = jsonObject.optDouble("rotation");
+                rotation = (float) jsonObject.optDouble("rotation");
+
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -88,6 +88,27 @@ Java_com_iview_stepmotor_MotorControl_nativeGetMotorEnable(
     }
 }
 
+extern "C" JNIEXPORT void
+Java_com_iview_stepmotor_MotorControl_nativeControlMultiMotors(
+        JNIEnv *env,
+        jobject /* this */,jint hSteps, jint vSteps, jint hDir, jint vDir, jint delay) {
+    LOGD("nativeControlMotor %d, %d, %d", hSteps, vSteps, delay);
+    if (hSteps == 0 || vSteps == 0) {
+        return;
+    }
+
+    controlMultipleMotors(hSteps, vSteps, hDir, vDir, delay);
+}
+
+extern "C" JNIEXPORT void
+Java_com_iview_stepmotor_MotorControl_nativeStopMultiMotors(
+        JNIEnv *env,
+        jobject /* this */) {
+    LOGD("nativeStopMultiMotors");
+
+    stopMultipleMotors();
+}
+
 
 
 

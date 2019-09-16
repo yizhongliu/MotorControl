@@ -27,6 +27,7 @@ public class NativePlayer {
     //  public static final int PARAM_VISUAL_EFFECT     = 0x1000 + 7;
     public static final int PARAM_AVSYNC_TIME_DIFF  = 0x1000 + 8;
 //  public static final int PARAM_PLAYER_CALLBACK   = 0x1000 + 9;
+    public static final int PARAM_VDEV_D3D_ROTATE   = 0x3000 + 3;
 
     private String mUrl;
     private String params;

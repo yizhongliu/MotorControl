@@ -12,8 +12,6 @@
 #include <stdbool.h>
 #include <android/log.h>
 
-#define MOTOR_DRV_UP_DOWN    "/dev/motor_gpio_up_down"
-
 
 #define  LOG_TAG    "vertical_motor"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -25,12 +23,10 @@ static int vMotorFd = -1;
 static struct timeval tv;
 static struct timeval ts;
 
-bool bVerticalMotorEnable = false;
+
 int gVDelay = 2000;
 int gVDirection = 0;
 
-int motor_up_pi_state = 0;
-int motor_down_pi_state = 0;
 
 int controlVerticalMotor(int steps, int dir, int delay) {
 

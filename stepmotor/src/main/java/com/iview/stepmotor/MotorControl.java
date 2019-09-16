@@ -42,6 +42,14 @@ public class MotorControl {
         nativeSwitchProjector(enable);
     }
 
+    public static void controlMultiMotors(int hSteps, int vSteps, int hDir, int vDir, int delay) {
+        nativeControlMultiMotors(hSteps, vSteps, hDir, vDir, delay);
+    }
+
+    public static void stopMultiMotors() {
+        nativeStopMultiMotors();
+    }
+
     private native static int nativeControlMotor(int motorId, int steps, int dir, int delay);
     private native static int nativeSetMotorSpeed(int motorId, int delay);
     private native static int nativeSetMotorDirection(int motorId, int direction);
@@ -50,5 +58,8 @@ public class MotorControl {
     private native static boolean nativeGetMotorEnable(int motorId);
 
     private native static void nativeSwitchProjector(int enable);
+
+    private native static void nativeControlMultiMotors(int hSteps, int vSteps, int hDir, int vDir, int delay);
+    private native static void nativeStopMultiMotors();
 
 }

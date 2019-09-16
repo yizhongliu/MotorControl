@@ -55,3 +55,165 @@ void motorDelay(int delay) {
         }
     }
 }
+
+void controlMultipleMotors(int hSteps, int vSteps, int hDir, int vDir, int delay) {
+    int counts = 0;
+    int steps = 0;
+    if (hSteps > vSteps) {
+        counts = hSteps / vSteps;
+        steps = hSteps;
+    } else {
+        counts = vSteps / hSteps;
+        steps = vSteps;
+    }
+
+    if (counts != 1 && ( counts % 2 != 0 )) {
+        LOGE("not support hSteps= %d, vStep=%d", hSteps, vSteps);
+        return;
+    }
+
+
+    //init h motor
+    int hMotorFd = open(MOTOR_DRV_LEFT_RIGHT, O_RDWR);
+    if(hMotorFd == -1)
+    {
+        LOGE("%s open left_right_motor_device error..........!\n", __FUNCTION__);
+        return;
+    }
+
+
+    controlMotorDev(hMotorFd, MOTO_ENABLE_LEFT_RIGHT, MOTOR_DISABLE);  //使能马达
+
+    controlMotorDev(hMotorFd, MOTO_DIR_LEFT_RIGHT, hDir);  //设置马达转动方向
+
+    int hGpioLevel = 0;
+    controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, hGpioLevel);
+
+    //init v motor
+    int vMotorFd = open(MOTOR_DRV_UP_DOWN, O_RDWR);
+    if(vMotorFd == -1)
+    {
+        LOGE("%s open left_right_motor_device error..........!\n", __FUNCTION__);
+        return ;
+    }
+
+
+    controlMotorDev(vMotorFd, MOTO_ENABLE_UP_DOWN, MOTOR_DISABLE);  //使能马达
+
+    controlMotorDev(vMotorFd, MOTO_DIR_UP_DOWN, vDir);  //设置马达转动方向
+
+    int vGpioLevel = 0;
+    controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, vGpioLevel);
+
+    int count = 0;
+    bVerticalMotorEnable = true;
+    bHorizontalMotorEnable = true;
+
+    for (int i = 0; i < steps; i++) {
+        if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
+            LOGE("reach up/down pi");
+            if (vDir == MOTOR_DIRECTION_UP) {
+                if (motor_down_pi_state == 0) {
+                    LOGE("reach up pi");
+                    motor_up_pi_state = 1;
+                    break;
+                }
+            } else if (vDir == MOTOR_DIRECTION_DOWN) {
+                if (motor_up_pi_state == 0) {
+                    LOGE("reach down pi");
+                    motor_down_pi_state = 1;
+                    break;
+                }
+            }
+        } else {
+            motor_up_pi_state = 0;
+            motor_down_pi_state = 0;
+        }
+
+        if (getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1) {
+            if (hDir == MOTOR_DIRECTION_LEFT) {
+                if(motor_right_pi_state == 0){
+                    motor_left_pi_state = 1;
+                    LOGE("Reach left pi");
+                    break;
+                }
+            } else if (hDir == MOTOR_DIRECTION_RIGHT) {
+                if(motor_left_pi_state == 0){
+                    motor_right_pi_state = 1;
+                    LOGE("Reach right pi");
+                    break;
+                }
+            }
+        } else {
+            motor_right_pi_state = 0;
+            motor_left_pi_state = 0;
+        }
+
+        if (hSteps > vSteps) {
+            hGpioLevel = !hGpioLevel;
+            controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, hGpioLevel);
+
+            if ((count % counts) == 0) {
+                vGpioLevel = !vGpioLevel;
+                controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, vGpioLevel);
+            }
+
+            count++;
+        } else {
+            vGpioLevel = !vGpioLevel;
+            controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, vGpioLevel);
+
+            if ((count % counts) == 0) {
+                hGpioLevel = !hGpioLevel;
+                controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, hGpioLevel);
+            }
+
+            count++;
+        }
+
+        motorDelay(delay);
+
+        if (hSteps > vSteps) {
+            hGpioLevel = !hGpioLevel;
+            controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, hGpioLevel);
+
+            if ((count % counts) == 0) {
+                vGpioLevel = !vGpioLevel;
+                controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, vGpioLevel);
+            }
+
+            count++;
+        } else {
+            vGpioLevel = !vGpioLevel;
+            controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, vGpioLevel);
+
+            if ((count % counts) == 0) {
+                hGpioLevel = !hGpioLevel;
+                controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, hGpioLevel);
+            }
+
+            count++;
+        }
+
+        motorDelay(delay);
+
+        if (bHorizontalMotorEnable == false && bVerticalMotorEnable == false) {
+            break;
+        }
+    }
+
+    controlMotorDev(vMotorFd, MOTO_ENABLE_UP_DOWN, MOTOR_ENABLE); //锁马达
+    close(vMotorFd);
+    bVerticalMotorEnable = false;
+
+    controlMotorDev(hMotorFd, MOTO_ENABLE_LEFT_RIGHT, MOTOR_ENABLE); //锁马达
+    bHorizontalMotorEnable = false;
+    close(hMotorFd);
+
+    return;
+}
+
+void stopMultipleMotors() {
+    bVerticalMotorEnable = false;
+    bHorizontalMotorEnable = false;
+}

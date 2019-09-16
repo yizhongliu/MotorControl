@@ -198,6 +198,62 @@ public class MotorControlUnity extends UnityPlayerActivity {
     }
 
     /**
+     * 同时控制两个马达转动， 需要保证steps之间相等或为偶数倍， 转动结束会通过 UnitySendMessage 通知unity
+     * @param hSteps 水平马达转动的脉冲数
+     * @param vSteps 垂直马达转动的脉冲数
+     * @param hDir : 水平马达转动方向
+     * {
+    @link    HMotorLeftDirection
+    @link    HMotorRightDirection
+     * }
+     * @param hDelay: 水平马达脉冲持续时间， 单位us， 数值越小速度越快
+     * @param vDir ： 垂直马达转动方向
+     * {
+    @link    VMotorUpDirection
+    @link    VMotorDownDirection
+     * }
+     * @param delay 脉冲数量多的马达脉冲持续时间，单位us， 数值越小速度越快
+     */
+    public int controlMultiMotor2(final int hSteps, final int vSteps, final int hDir, final int vDir, final int delay) {
+
+        if (hSteps == 0 && vSteps == 0) {
+            Log.e(TAG, "hStep and vStep can't be 0");
+        }
+
+        if (hSteps == 0) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MotorControl.controlMotor(VMotor, vSteps, vDir, delay);
+                    UnityPlayer.UnitySendMessage(unityPacakage, unityMethod, "controlMultiMotor2");
+                }
+            }).start();
+        } else if (vSteps == 0) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MotorControl.controlMotor(HMotor, hSteps, hDir, delay);
+                    UnityPlayer.UnitySendMessage(unityPacakage, unityMethod, "controlMultiMotor2");
+                }
+            }).start();
+        } else {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MotorControl.controlMultiMotors(hSteps, vSteps, hDir, vDir, delay);
+                    UnityPlayer.UnitySendMessage(unityPacakage, unityMethod, "controlMultiMotor2");
+                }
+            }).start();
+        }
+
+        return 0;
+    }
+
+    public void stopMultiMotors() {
+        MotorControl.stopMultiMotors();
+    }
+
+    /**
      * 同时控制两个马达转动， 转动结束会通过 UnitySendMessage 通知unity
      * @param hAngle : 水平马达转动角度
      * @param vAngle ： 垂直马达转动角度

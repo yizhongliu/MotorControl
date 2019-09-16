@@ -3,6 +3,7 @@ package com.iview.mirromove.util;
 public class MsgType {
     public final static String TYPE_CONTROL = "Control";
     public final static String TYPE_PATH_PLANNING = "PathPlanning";
+    public final static String TYPE_AUTO_RUNNING = "AutoRunning";
 
     public final static String ACTION_SHOW_IMAGE = "ShowImage";
     public final static String ACTION_SHOW_VIDEO = "ShowVideo";
@@ -14,6 +15,7 @@ public class MsgType {
     public final static String ACTION_PREVIEW = "Preview";
     public final static String ACTION_RUN = "Run";
     public final static String ACTION_RUN_STOP = "RunStop";
+    public final static String ACTION_SET_PARAM = "SetParam";
 
 
     public final static String INTENT_ACTION_MEDIA = "com.iview.mirromove.INTENT_ACTION_MEDIA";
