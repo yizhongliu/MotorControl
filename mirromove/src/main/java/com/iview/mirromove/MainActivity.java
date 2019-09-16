@@ -45,8 +45,9 @@ import com.tbruyelle.rxpermissions2.RxPermissions;
 import java.io.IOException;
 import java.io.PushbackInputStream;
 
-import common.tool.ffmpegplayer.NativePlayer;
+
 import io.reactivex.functions.Consumer;
+import pri.tool.nativeplayer.NativePlayer;
 
 
 public class MainActivity extends Activity {
@@ -82,7 +83,6 @@ public class MainActivity extends Activity {
 
     boolean bSurfaceCreate = false;
 
-    private MessageReceiver mMessageReceiver;
 
     private HandlerThread mBackHandlerThread;
     private Handler mBackHandler;
@@ -124,7 +124,6 @@ public class MainActivity extends Activity {
         Intent controlIntent = new Intent(this, ControlService.class);
         bindService(controlIntent, controlConnection, BIND_AUTO_CREATE);
 
-        registerBroadcastReceive();
     }
 
     @Override
@@ -133,7 +132,7 @@ public class MainActivity extends Activity {
         Log.d(TAG, "onDestroy");
 
         if (mPlayer != null) {
-            mPlayer.close();
+            mPlayer.release();
             mPlayer = null;
         }
 
@@ -144,7 +143,6 @@ public class MainActivity extends Activity {
         unbindService(netConnection);
         unbindService(socketConnection);
 
-        unregisterBroadcastReceive();
     }
 
     private void init() {
@@ -159,9 +157,31 @@ public class MainActivity extends Activity {
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(surfaceCallback);
 
-        mMessageReceiver = new MessageReceiver();
 
         controlCallBack = new ControlCallBack();
+
+        mPlayer = new NativePlayer();
+
+        mPlayer.setOnPreparedListener(new NativePlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                      //  seekBar.setMax(player.getDuration());
+                    }
+                });
+           //     player.usePlayClockTime();
+                mPlayer.start();
+            }
+        });
+
+        mPlayer.setOnErrorListener(new NativePlayer.OnErrorListener() {
+            @Override
+            public void onError(int errorCode) {
+
+            }
+        });
 
         initBackThread();
     }
@@ -253,88 +273,37 @@ public class MainActivity extends Activity {
         }
     }
 
-    public class MessageReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            try {
-            //    if (intent.getAction())) {
-
-            //    }
-                String messge = intent.getStringExtra("message");
-
-                Log.e(TAG, "getStringExtra:" + messge);
-                if (messge.equals(MsgType.ACTION_SHOW_VIDEO)) {
-
-                    //先隐藏图片显示
-                    if (bImageShow) {
-                        imagePriView.setVisibility(View.INVISIBLE);
-                        bImageShow = false;
-                    }
-
-                    dataSource = Environment.getExternalStorageDirectory() + "/Billons.mp4";
-                    startPlay(dataSource, "video_hwaccel=0;video_rotate=0");
-
-                    if (bVideoShow) {
-
-                    } else {
-                        surfaceView.setVisibility(View.VISIBLE);
-                    }
-                } else if (messge.equals(MsgType.ACTION_SHOW_IMAGE)) {
-                    if (bVideoShow) {
-                        if (mPlayer != null) {
-                            mPlayer.close();
-                            surfaceView.setVisibility(View.INVISIBLE);
-                        }
-                    }
-
-                    bImageShow = true;
-                    String path = Environment.getExternalStorageDirectory() + "/Pictures/test11.jpg";
-                    Bitmap bitmap = BitmapFactory.decodeFile(path);
-                    imagePriView.setVisibility(View.VISIBLE);
-                    imagePriView.setImageBitmap(bitmap);
-
-                }
-            } catch (Exception e){
-            }
-        }
-    }
 
     public void startPlay(String url, String param) {
-        if (mPlayer != null) {
-            mPlayer.open(url, param);
-            mPlayer.setDisplaySurface(mVideoSurface);
-        } else {
-            mPlayer = new NativePlayer(url, mHandler, param);
-            mPlayer.setDisplaySurface(mVideoSurface);
-        }
+
+        mPlayer.setDataSource(url);
     }
 
     private void play() {
         if (mPlayer != null) {
-            mPlayer.play();
+            mPlayer.start();
         }
     }
 
-    private void pause() {
-        if (mPlayer != null) {
-            mPlayer.pause();
-        }
-    }
-
-    private void seek(int progress) {
-        if (mPlayer != null) {
-            mPlayer.seek(progress);
-        }
-    }
+//    private void pause() {
+//        if (mPlayer != null) {
+//            mPlayer.pause();
+//        }
+//    }
+//
+//    private void seek(int progress) {
+//        if (mPlayer != null) {
+//            mPlayer.seek(progress);
+//        }
+//    }
 
     private void prepare() {
         mPlayer.prepare();
     }
 
-    private void open(String url, String param) {
-        mPlayer.open(url, param);
-    }
+//    private void open(String url, String param) {
+//        mPlayer.open(url, param);
+//    }
 
 
     public void changeSurfaceSize(int videoWidth, int videoHeight, int mode) {
@@ -358,18 +327,6 @@ public class MainActivity extends Activity {
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(videoWidth, videoHeight);
         layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
         surfaceView.setLayoutParams(layoutParams);
-    }
-
-    private void registerBroadcastReceive() {
-
-        IntentFilter filter = new IntentFilter();
-        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
-        filter.addAction(MsgType.INTENT_ACTION_MEDIA);
-        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
-    }
-
-    private void unregisterBroadcastReceive() {
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
     }
 
 
@@ -412,10 +369,10 @@ public class MainActivity extends Activity {
         public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             Log.d(TAG, "surfaceChanged Called");
 
-            mVideoSurface = holder.getSurface();
-            if (mPlayer != null) {
-                mPlayer.setDisplaySurface(mVideoSurface);
-            }
+//            mVideoSurface = holder.getSurface();
+//            if (mPlayer != null) {
+//                mPlayer.setSurface(mVideoSurface);
+//            }
         }
 
         @Override
@@ -426,8 +383,10 @@ public class MainActivity extends Activity {
 
             mVideoSurface = holder.getSurface();
             if (mPlayer != null) {
-                mPlayer.setDisplaySurface(mVideoSurface);
+                mPlayer.setSurface(mVideoSurface);
             }
+
+            mPlayer.prepare();
         }
 
         @Override
@@ -436,70 +395,14 @@ public class MainActivity extends Activity {
             bVideoShow = false;
 
             mVideoSurface = null;
-            if (mPlayer != null) {
-                mPlayer.setDisplaySurface(mVideoSurface);
-            }
+//            if (mPlayer != null) {
+//                mPlayer.setSurface(mVideoSurface);
+//            }
         }
     }
 
 
 
-    private static final int MSG_UPDATE_PROGRESS  = 1;
-    private static final int MSG_UDPATE_VIEW_SIZE = 2;
-    private Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case MSG_UPDATE_PROGRESS: {
-                    mHandler.sendEmptyMessageDelayed(MSG_UPDATE_PROGRESS, 200);
-                    int progress = mPlayer != null ? (int)mPlayer.getParam(NativePlayer.PARAM_MEDIA_POSITION) : 0;
-                    if (progress >= 0) {
-                  //      mSeekBar.setProgress(progress);
-                    }
-                }
-                break;
-
-                case MSG_UDPATE_VIEW_SIZE: {
-//                    if (mPlayer != null && mPlayer.initVideoSize(mVideoViewW, mVideoViewH, mVideo)) {
-//                        mVideo.setVisibility(View.VISIBLE);
-//                    }
-                }
-                break;
-                case NativePlayer.MSG_OPEN_DONE: {
-
-                    if (mPlayer != null) {
-
-                        int videoWidth = (int)mPlayer.getParam(NativePlayer.PARAM_VIDEO_WIDTH);
-                        int videoHeight = (int)mPlayer.getParam(NativePlayer.PARAM_VIDEO_HEIGHT);
-                        changeSurfaceSize(videoWidth, videoHeight, 0);
-
-                        mPlayer.setDisplaySurface(mVideoSurface);
-
-                        play();
-                    }
-                    Log.e(TAG, "NativePlayer.MSG_OPEN_DONE");
-                }
-                break;
-                case NativePlayer.MSG_OPEN_FAILED: {
-                    String str = "Open fail";
-                    Toast.makeText(MainActivity.this, str, Toast.LENGTH_LONG).show();
-                }
-                break;
-                case NativePlayer.MSG_PLAY_COMPLETED: {
-                    Log.e(TAG, "Play complete");
-                //    changePlayerUiState(false);
-                //    mIsCompleted = true;
-                    if (controlService != null) {
-                        controlService.onShowComplete();
-                    }
-                }
-                break;
-                case NativePlayer.MSG_VIDEO_RESIZED: {
-                }
-                break;
-            }
-        }
-    };
 
     public class ControlCallBack implements PlayCallBack {
 
@@ -515,7 +418,9 @@ public class MainActivity extends Activity {
                         imageUrl =  Environment.getExternalStorageDirectory() + "/" + url;
                         if (bVideoShow) {
                             if (mPlayer != null) {
-                                mPlayer.close();
+                                mPlayer.stop();
+                                mPlayer.release();
+//                                Log.e(TAG, "stop mPlayer");
                                 surfaceView.setVisibility(View.INVISIBLE);
                             }
                         }
@@ -544,10 +449,12 @@ public class MainActivity extends Activity {
                         }
 
                         // dataSource = Environment.getExternalStorageDirectory() + "/Billons.mp4";
-                        startPlay(absUrl, "video_hwaccel=0;video_rotate=0");
+                    //    startPlay(absUrl, "video_hwaccel=0;video_rotate=30");
+
+                        mPlayer.setDataSource(absUrl);
 
                         if (bVideoShow) {
-
+                            mPlayer.prepare();
                         } else {
                             surfaceView.setVisibility(View.VISIBLE);
                         }
@@ -574,7 +481,7 @@ public class MainActivity extends Activity {
 
                         imagePriView.setImageBitmap(bitmap);
                     } else if (bVideoShow) {
-                        mPlayer.setParam(NativePlayer.PARAM_VDEV_D3D_ROTATE, (int) rotation);
+                   //     mPlayer.setParam(NativePlayer.PARAM_VDEV_D3D_ROTATE, (int) rotation);
                     }
                 }
             });
