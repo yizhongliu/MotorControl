@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
-include_directories(include)
+include_directories(include libleaktracer/include)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_SOURCE_DIR}/../jniLibs/${ANDROID_ABI}")
 
@@ -29,7 +29,9 @@ add_library( # Sets the name of the library.
         ${src_files}
         ./net/NetTimeProvider.cpp
         ./net/NetTimeClient.cpp
-        ./net/PlayClockTime.cpp)
+        ./net/PlayClockTime.cpp
+        ./libleaktracer/src/AllocationHandlers.cpp
+        ./libleaktracer/src/MemoryTrace.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by

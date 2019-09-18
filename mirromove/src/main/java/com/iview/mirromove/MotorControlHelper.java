@@ -141,6 +141,50 @@ public class MotorControlHelper {
         return 0;
     }
 
+    public int controlMultiMotor2(final int hSteps, final int vSteps, final int hDir, final int vDir, final int delay) {
+
+        if (hSteps == 0 && vSteps == 0) {
+            Log.e(TAG, "hStep and vStep can't be 0");
+        }
+
+        if (hSteps == 0) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MotorControl.controlMotor(VMotor, vSteps, vDir, delay);
+
+                    if (motorCallBack != null) {
+                        motorCallBack.onExecute();
+                    }
+                }
+            }).start();
+        } else if (vSteps == 0) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MotorControl.controlMotor(HMotor, hSteps, hDir, delay);
+
+                    if (motorCallBack != null) {
+                        motorCallBack.onExecute();
+                    }
+                }
+            }).start();
+        } else {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MotorControl.controlMultiMotors(hSteps, vSteps, hDir, vDir, delay);
+
+                    if (motorCallBack != null) {
+                        motorCallBack.onExecute();
+                    }
+                }
+            }).start();
+        }
+
+        return 0;
+    }
+
     public boolean getMotorRunning() {
         return bMotorRunning;
     }

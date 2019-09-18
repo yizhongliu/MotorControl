@@ -16,6 +16,11 @@
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #define LOGD(...)  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
+ int motor_left_pi_state = 0;
+ int motor_right_pi_state = 0;
+ int motor_up_pi_state = 0;
+ int motor_down_pi_state = 0;
+
 int controlMotorDev(int fd, int gpio_num, int gpio_state) {
     struct motor_a3901 userdata_motor;
     userdata_motor.gpio_num   = gpio_num;

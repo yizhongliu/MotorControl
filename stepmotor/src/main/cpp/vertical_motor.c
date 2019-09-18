@@ -27,10 +27,14 @@ static struct timeval ts;
 int gVDelay = 2000;
 int gVDirection = 0;
 
+extern int motor_down_pi_state;
+extern int motor_up_pi_state;
+
 
 int controlVerticalMotor(int steps, int dir, int delay) {
 
-    LOGD("controlHorizontalMotor step: %d, direction: %d, delay %d", steps, dir, delay);
+    LOGD("controlVerticalMotor step: %d, direction: %d, delay %d", steps, dir, delay);
+    LOGD("controlVerticalMotor motor_down_pi_state: %d, motor_up_pi_state: %d", motor_down_pi_state, motor_up_pi_state);
 
     vMotorFd = open(MOTOR_DRV_UP_DOWN, O_RDWR);
     if(vMotorFd == -1)
@@ -48,7 +52,7 @@ int controlVerticalMotor(int steps, int dir, int delay) {
     int gpioLevel = 0;
     controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
     while (steps--) {
-
+  //      LOGE(" step --");
         if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
             LOGE("reach up/down pi");
             if (dir == MOTOR_DIRECTION_UP) {
@@ -65,6 +69,7 @@ int controlVerticalMotor(int steps, int dir, int delay) {
                 }
             }
         } else {
+  //          LOGE(" unset pi state");
             motor_up_pi_state = 0;
             motor_down_pi_state = 0;
         }

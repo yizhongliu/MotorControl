@@ -19,6 +19,8 @@ public:
 
     void onProgress(int threadMode, int progress);
 
+    void onCompletion(int threadMode);
+
 private:
     JavaVM *javaVM;
     JNIEnv *env;
@@ -26,6 +28,7 @@ private:
     jmethodID jmd_prepared;
     jmethodID jmd_onError;
     jmethodID jmd_onProgress;
+    jmethodID jmd_onCompletion;
 
 };
 

@@ -16,14 +16,20 @@ public class NativePlayer implements SurfaceHolder.Callback {
 
     //直播地址或媒体文件路径
     private String dataSource;
+    private int rotate;
     private SurfaceHolder surfaceHolder;
 
     private OnErrorListener onErrorListener;
     private OnPreparedListener onPreparedListener;
     private OnProgressListener onProgressListener;
+    private OnCompletionListener onCompletionListener;
 
     public void setDataSource(String dataSource) {
         this.dataSource = dataSource;
+    }
+
+    public void setRotate(int rotate) {
+        this.rotate = rotate;
     }
 
     /**
@@ -32,7 +38,7 @@ public class NativePlayer implements SurfaceHolder.Callback {
 
     public void prepare() {
         Log.e(TAG, "prepare");
-        nativePrepare(dataSource);
+        nativePrepare(dataSource, rotate);
     }
 
     public void start() {
@@ -95,6 +101,12 @@ public class NativePlayer implements SurfaceHolder.Callback {
         }
     }
 
+    public void onCompletion() {
+        if (null != onCompletionListener) {
+            onCompletionListener.onCompletion();
+        }
+    }
+
     /**
      * 获取总的播放时长
      * @return
@@ -103,6 +115,13 @@ public class NativePlayer implements SurfaceHolder.Callback {
         return nativeGetDuration();
     }
 
+    public int getVideoWidth() {
+        return nativeGetVideoWidth();
+    }
+
+    public int getVideoHeight() {
+        return nativeGetVideoHeight();
+    }
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
@@ -131,6 +150,10 @@ public class NativePlayer implements SurfaceHolder.Callback {
         this.onProgressListener = listener;
     }
 
+    public void setOnCompletionListener(OnCompletionListener listener) {
+        this.onCompletionListener = listener;
+    }
+
     public interface OnPreparedListener {
         void onPrepared();
     }
@@ -141,6 +164,10 @@ public class NativePlayer implements SurfaceHolder.Callback {
 
     public interface OnProgressListener {
         void onProgress(int progress);
+    }
+
+    public interface OnCompletionListener {
+        void onCompletion();
     }
 
     public void startNetTimeProvider(String ip, int port) {
@@ -164,7 +191,7 @@ public class NativePlayer implements SurfaceHolder.Callback {
     }
 
 
-    private native void nativePrepare(String dataSource);
+    private native void nativePrepare(String dataSource, int rotate);
 
     private native void nativeStart();
 
@@ -176,10 +203,16 @@ public class NativePlayer implements SurfaceHolder.Callback {
 
     private native int nativeGetDuration();
 
+    private native int nativeGetVideoWidth();
+
+    private native int nativeGetVideoHeight();
+
     private native void nativeStartNetTimeProvider(String ip, int port);
     private native void nativeStopNetTimeProvider();
     private native void nativeStartNetTimeClient(String ip, int port);
     private native void nativeStopNetTimeClient();
     private native void nativeUsePlayClockTime();
+
+    public native void nativeMnLeak();
 
 }

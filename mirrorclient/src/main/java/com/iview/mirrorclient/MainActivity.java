@@ -169,8 +169,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     jsonObject.put("action", "Show");
 
                     JSONObject imgObj = new JSONObject();
-                    imgObj.put("url", "test.jpg");
-                    imgObj.put("rotation", 0.0);
+                    imgObj.put("url", "test2.png");
+                    imgObj.put("rotation", 30);
                     imgObj.put("imgTime", -1);
 
                     jsonObject.put("arg", imgObj);
@@ -194,8 +194,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     jsonObject2.put("action", "Show");
 
                     JSONObject imgObj2 = new JSONObject();
-                    imgObj2.put("url", "Billons.mp4");
-                    imgObj2.put("rotation", 0.0);
+                    imgObj2.put("url", "test3.mp4");
+                   // imgObj2.put("url", "Billons.mp4");
+                    imgObj2.put("rotation", 30);
                     imgObj2.put("imgTime", -1);
 
                     jsonObject2.put("arg", imgObj2);
@@ -344,7 +345,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     JSONObject obj9 = new JSONObject();
                     obj9.put("rotation", 0);
-                    obj9.put("url", "test.jpg");
+                    obj9.put("url", "test2.png");
                     obj9.put("imgTime", 5000);
 
 
@@ -390,8 +391,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.planRun:
                 JSONObject jsonObject11 = new JSONObject();
                 try {
-                    jsonObject11.put("type", "PathPlanning");
-                    jsonObject11.put("action", "Run");
+                    jsonObject11.put("type", "AutoRunning");
+                    jsonObject11.put("action", "Start");
 
 
                 } catch (Exception e) {
@@ -409,8 +410,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.planRunStop:
                 JSONObject jsonObject12 = new JSONObject();
                 try {
-                    jsonObject12.put("type", "PathPlanning");
-                    jsonObject12.put("action", "RunStop");
+                    jsonObject12.put("type", "AutoRunning");
+                    jsonObject12.put("action", "Stop");
 
 
                 } catch (Exception e) {
@@ -434,7 +435,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     JSONObject obj13 = new JSONObject();
                     obj13.put("rotation", 0);
-                    obj13.put("url", "Billons.mp4");
+                    //obj13.put("url", "Billons.mp4");
+                    obj13.put("url", "test3.mp4");
                     obj13.put("imgTime", 5000);
 
 

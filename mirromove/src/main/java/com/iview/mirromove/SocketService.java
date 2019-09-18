@@ -189,7 +189,8 @@ public class SocketService extends Service {
         String action = jsonParser.getAction();
 
         if (type.equals(MsgType.TYPE_PATH_PLANNING)
-            || (type.equals(MsgType.TYPE_CONTROL))) {
+            || (type.equals(MsgType.TYPE_CONTROL))
+            || (type.equals(MsgType.TYPE_AUTO_RUNNING))) {
             Intent pathIntent = new Intent(MsgType.INTENT_ACTION_PATH_PLANNING);
             pathIntent.putExtra("message", msg);
             LocalBroadcastManager.getInstance(this).sendBroadcast(pathIntent);

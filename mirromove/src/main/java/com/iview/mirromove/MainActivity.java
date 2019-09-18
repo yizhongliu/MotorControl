@@ -169,9 +169,15 @@ public class MainActivity extends Activity {
                     @Override
                     public void run() {
                       //  seekBar.setMax(player.getDuration());
+                    int width = mPlayer.getVideoWidth();
+                    int height = mPlayer.getVideoHeight();
+                    if (width != 0 && height != 0) {
+                        changeSurfaceSize(width, height, 0);
+                    }
                     }
                 });
            //     player.usePlayClockTime();
+
                 mPlayer.start();
             }
         });
@@ -180,6 +186,16 @@ public class MainActivity extends Activity {
             @Override
             public void onError(int errorCode) {
 
+            }
+        });
+
+        mPlayer.setOnCompletionListener(new NativePlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion() {
+                if (controlService != null) {
+                    Log.e(TAG, "Video on Completion");
+                    controlService.onShowComplete();
+                }
             }
         });
 
@@ -407,7 +423,7 @@ public class MainActivity extends Activity {
     public class ControlCallBack implements PlayCallBack {
 
         @Override
-        public void play(final String url, final int time, final float rotation) {
+        public void play(final String url, final int time, final int rotation) {
 
             runOnUiThread(new Runnable() {
                 @Override
@@ -422,6 +438,7 @@ public class MainActivity extends Activity {
                                 mPlayer.release();
 //                                Log.e(TAG, "stop mPlayer");
                                 surfaceView.setVisibility(View.INVISIBLE);
+                                bVideoShow = false;
                             }
                         }
 
@@ -430,12 +447,13 @@ public class MainActivity extends Activity {
 
                         Bitmap bitmap = BitmapFactory.decodeFile(imageUrl);
 
-                        matrix.setRotate(rotation);
-                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),bitmap.getHeight(), matrix, true);
+                 //       matrix.setRotate(rotation);
+                 //       bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),bitmap.getHeight(), matrix, true);
 
                         imagePriView.setVisibility(View.VISIBLE);
 
                         imagePriView.setImageBitmap(bitmap);
+                        imagePriView.setRotation(rotation);
 
                         if (time != -1) {
                             mBackHandler.sendEmptyMessageDelayed(MSG_IMAGE_DISMISS, time);
@@ -448,12 +466,21 @@ public class MainActivity extends Activity {
                             bImageShow = false;
                         }
 
+                        if (bVideoShow) {
+                            if (mPlayer != null) {
+                                mPlayer.stop();
+                                mPlayer.release();
+                            }
+                        }
+
                         // dataSource = Environment.getExternalStorageDirectory() + "/Billons.mp4";
                     //    startPlay(absUrl, "video_hwaccel=0;video_rotate=30");
 
                         mPlayer.setDataSource(absUrl);
+                        mPlayer.setRotate(rotation);
 
                         if (bVideoShow) {
+                            mPlayer.setSurface(mVideoSurface);
                             mPlayer.prepare();
                         } else {
                             surfaceView.setVisibility(View.VISIBLE);
@@ -463,28 +490,59 @@ public class MainActivity extends Activity {
             });
         }
 
-        public void setParam(final float rotation) {
+        @Override
+        public void setParam(final int rotation) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (bImageShow) {
                     //    imagePriView.setRotation(rotation);
 
-                        Bitmap bitmap = BitmapFactory.decodeFile(imageUrl);
-
-                   //     Bitmap bitmap = ((BitmapDrawable) getResources().getDrawable(R.drawable.pic)).getBitmap();
-                        // 设置旋转角度
-                        matrix.setRotate(rotation);
-
-
-                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),bitmap.getHeight(), matrix, true);
-
-                        imagePriView.setImageBitmap(bitmap);
+//                        Bitmap bitmap = BitmapFactory.decodeFile(imageUrl);
+//
+//                   //     Bitmap bitmap = ((BitmapDrawable) getResources().getDrawable(R.drawable.pic)).getBitmap();
+//                        // 设置旋转角度
+//                        matrix.setRotate(rotation);
+//
+//
+//                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),bitmap.getHeight(), matrix, true);
+//
+//                        imagePriView.setImageBitmap(bitmap);
+                        imagePriView.setRotation(rotation);
                     } else if (bVideoShow) {
                    //     mPlayer.setParam(NativePlayer.PARAM_VDEV_D3D_ROTATE, (int) rotation);
                     }
                 }
             });
+        }
+
+        @Override
+        public void stop() {
+            if (bVideoShow) {
+                if (mPlayer != null) {
+                    mPlayer.stop();
+                    mPlayer.release();
+//                                Log.e(TAG, "stop mPlayer");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            surfaceView.setVisibility(View.INVISIBLE);
+                        }
+                    });
+                    bVideoShow = false;
+                }
+            }
+
+            if (bImageShow) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        imagePriView.setVisibility(View.INVISIBLE);
+                    }
+                });
+
+                bImageShow = false;
+            }
         }
     }
 

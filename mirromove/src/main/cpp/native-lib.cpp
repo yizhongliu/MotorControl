@@ -6,6 +6,9 @@
 #include "net/NetTimeProvider.h"
 #include "net/NetTimeClient.h"
 
+
+//#include <fstream>
+//#include "MemoryTrace.hpp"
 static JavaVM *java_vm;
 JavaCallHelper *javaCallHelper = 0;
 FFmpegPlayer *ffmpeg = 0;
@@ -48,12 +51,12 @@ void renderFrame(uint8_t *src_data, int src_lineSize, int width, int height) {
 extern "C" JNIEXPORT void JNICALL
 native_prepare (
         JNIEnv *env,
-        jobject instance, jstring path) {
+        jobject instance, jstring path, jint rotate) {
 
     const char *dataSource = env->GetStringUTFChars(path, 0);
 
     javaCallHelper = new JavaCallHelper(java_vm, env, instance);
-    ffmpeg = new FFmpegPlayer(javaCallHelper, const_cast<char *>(dataSource));
+    ffmpeg = new FFmpegPlayer(javaCallHelper, const_cast<char *>(dataSource), rotate);
     ffmpeg->setRenderCallback(renderFrame);
     ffmpeg->prepare();
 
@@ -100,13 +103,13 @@ extern "C" JNIEXPORT void JNICALL
 native_release (JNIEnv *env,
              jobject /* this */) {
     LOGE("native_release ");
-    pthread_mutex_lock(&mutex);
+ //   pthread_mutex_lock(&mutex);
     if (window) {
         //把老的释放
         ANativeWindow_release(window);
         window = 0;
     }
-    pthread_mutex_unlock(&mutex);
+ //   pthread_mutex_unlock(&mutex);
     DELETE(ffmpeg);
 }
 
@@ -116,6 +119,26 @@ native_getDuration (JNIEnv *env,
     jint ret = 0;
     if (ffmpeg) {
         ret = ffmpeg->getDuration();
+    }
+    return ret;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+native_getVideoWidth (JNIEnv *env,
+                    jobject /* this */) {
+    jint ret = 0;
+    if (ffmpeg) {
+        ret = ffmpeg->getVideoWidth();
+    }
+    return ret;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+native_getVideoHeight (JNIEnv *env,
+                    jobject /* this */) {
+    jint ret = 0;
+    if (ffmpeg) {
+        ret = ffmpeg->getVideoHeight();
     }
     return ret;
 }
@@ -177,19 +200,42 @@ native_use_play_clock_time (JNIEnv *env,
     }
 }
 
+char *mm = NULL;
+extern "C" JNIEXPORT void JNICALL
+native_mn_leak (JNIEnv *env,
+                            jobject /* this */) {
+//    leaktracer::MemoryTrace::GetInstance().startMonitoringAllThreads();
+//    mm = (char *)malloc(4096);
+//    memset(mm,0x0,4096);
+//    leaktracer::MemoryTrace::GetInstance().stopAllMonitoring();
+//
+//    std::ofstream out;
+//    out.open("/sdcard/leak.out", std::ios_base::out);
+//    if (out.is_open()) {
+//        leaktracer::MemoryTrace::GetInstance().writeLeaks(out);
+//        LOGE("Write leaks success");
+//    } else {
+//        LOGE("Failed to write to \"leaks.out\"\n");
+//    }
+
+}
+
 /* List of implemented native methods */
 static JNINativeMethod native_methods[] = {
-        {"nativePrepare", "(Ljava/lang/String;)V", (void *) native_prepare},
+        {"nativePrepare", "(Ljava/lang/String;I)V", (void *) native_prepare},
         {"nativeStart", "()V", (void *) native_start},
         {"nativeSetSurface", "(Ljava/lang/Object;)V", (void *) native_set_surface},
         {"nativeStop", "()V", (void *) native_stop},
         {"nativeRelease", "()V", (void *) native_release},
         {"nativeGetDuration", "()I", (void *) native_getDuration},
+        {"nativeGetVideoWidth", "()I", (void *) native_getVideoWidth},
+        {"nativeGetVideoHeight", "()I", (void *) native_getVideoHeight},
         {"nativeStartNetTimeProvider", "(Ljava/lang/String;I)V", (void *) native_start_net_time_provider},
         {"nativeStopNetTimeProvider", "()V", (void *) native_stop_net_time_provider},
         {"nativeStartNetTimeClient", "(Ljava/lang/String;I)V", (void *) native_start_net_time_client},
         {"nativeStopNetTimeClient", "()V", (void *) native_stop_net_time_client},
-        {"nativeUsePlayClockTime", "()V", (void *) native_use_play_clock_time}
+        {"nativeUsePlayClockTime", "()V", (void *) native_use_play_clock_time},
+        {"nativeMnLeak", "()V", (void *) native_mn_leak}
 };
 
 

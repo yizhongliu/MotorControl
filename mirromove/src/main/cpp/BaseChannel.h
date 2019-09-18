@@ -15,11 +15,13 @@ extern "C" {
 #include "safe_queue.h"
 #include "JavaCallHelper.h"
 #include "net/PlayClockTime.h"
+#include "macro.h"
 
 class BaseChannel {
 public:
     BaseChannel(int id, AVCodecContext *codecContext, AVRational time_base, JavaCallHelper *javaCallHelper);
     virtual ~BaseChannel() {
+        LOGE("baseChannel release");
         packets.clear();
         frames.clear();
     }
@@ -30,6 +32,7 @@ public:
  */
     static void releaseAVPacket(AVPacket **packet) {
         if (packet) {
+        //    av_packet_unref(*packet);
             av_packet_free(packet);
             *packet = 0;
         }

@@ -5,6 +5,11 @@
 #include "VideoChannel.h"
 #include "macro.h"
 
+extern "C" {
+#include <libavfilter/buffersrc.h>
+#include <libavfilter/buffersink.h>
+};
+
 /**
  * 丢包（AVPacket）
  * @param q
@@ -37,15 +42,22 @@ void dropAVFrame(queue<AVFrame *> &q) {
 }
 
 VideoChannel::VideoChannel(int id, AVCodecContext *codecContext, int fps,
-        AVRational time_base, JavaCallHelper *javaCallHelper )
+        AVRational time_base, JavaCallHelper *javaCallHelper,
+        AVFilterContext *buffersink_ctx , AVFilterContext *buffersrc_ctx,
+        int oVideoWidth, int oVideoHeight)
         : BaseChannel(id, codecContext, time_base, javaCallHelper){
     this->fps = fps;
+    this->buffersink_ctx = buffersink_ctx;
+    this->buffersrc_ctx = buffersrc_ctx;
+    this->oVideoWidth = oVideoWidth;
+    this->oVideoHeight = oVideoHeight;
+
     packets.setSyncHandle(dropAVPacket);
     frames.setSyncHandle(dropAVFrame);
 }
 
 VideoChannel::~VideoChannel() {
-
+    LOGE("VideoChannel::~VideoChannel");
 }
 
 void *task_video_decode(void *args) {
@@ -84,10 +96,13 @@ void VideoChannel::stop() {
     pthread_join(pid_video_play, 0);
 }
 
+int avacodecount = 0;
 void VideoChannel::video_decode() {
     AVPacket *avPacket;
     int ret;
     while (isPlaying) {
+
+
         ret = packets.pop(avPacket);
         //如果停止播放，则跳出循环，不继续执行，在循环外释放packet
         if (!isPlaying) {
@@ -106,15 +121,53 @@ void VideoChannel::video_decode() {
         releaseAVPacket(&avPacket);
 
         AVFrame *frame = av_frame_alloc();
+
+ //       AVFrame *filter_frame = av_frame_alloc();
+
         ret = avcodec_receive_frame(codecContext, frame);
         if (ret == AVERROR(EAGAIN)) {
             releaseAVFrame(&frame);
+//            releaseAVFrame(&filter_frame);
             continue;
         } else if (ret != 0) {
             releaseAVFrame(&frame);
+ //           releaseAVFrame(&filter_frame);
             break;
         }
 
+        /* push the decoded frame into the filtergraph */
+    //    if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0) {
+//            if (av_buffersrc_add_frame(buffersrc_ctx, frame) < 0) {
+//            av_log(NULL, AV_LOG_ERROR, "Error while feeding the filtergraph\n");
+//            releaseAVFrame(&frame);
+//            releaseAVFrame(&filter_frame);
+//            continue;
+//        }
+//
+//        /* pull filtered frames from the filtergraph */
+//        while (1) {
+//            ret = av_buffersink_get_frame(buffersink_ctx, filter_frame);
+//            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+//                break;
+//            }
+//
+//            if (ret < 0) {
+//                releaseAVFrame(&frame);
+//                releaseAVFrame(&filter_frame);
+//                break;
+//            }
+//
+//            while (isPlaying && frames.size() > 100) {
+//                av_usleep(10* 1000);
+//                continue;
+//            }
+//
+//            frames.push(filter_frame);
+//        }
+//
+//        releaseAVFrame(&frame);
+
+ //       releaseAVFrame(&frame);
         while (isPlaying && frames.size() > 100) {
             av_usleep(10* 1000);
             continue;
@@ -125,23 +178,35 @@ void VideoChannel::video_decode() {
     }
 
     releaseAVPacket(&avPacket);
+    LOGE("leave video decode");
 }
+
 
 void VideoChannel::video_play() {
     AVFrame *frame = 0;
 
     uint8_t *dst_data[4];
     int dst_linesize[4];
-    SwsContext *sws_ctx = sws_getContext(codecContext->width,
-                                         codecContext->height,
+//    SwsContext *sws_ctx = sws_getContext(codecContext->width,
+//                                         codecContext->height,
+//                                         codecContext->pix_fmt,
+//                                         codecContext->width,
+//                                         codecContext->height,
+//                                         AV_PIX_FMT_RGBA,
+//                                         SWS_BILINEAR, NULL, NULL, NULL);
+
+    SwsContext *sws_ctx = sws_getContext(oVideoWidth,
+                                         oVideoHeight,
                                          codecContext->pix_fmt,
-                                         codecContext->width,
-                                         codecContext->height,
+                                         oVideoWidth,
+                                         oVideoHeight,
                                          AV_PIX_FMT_RGBA,
                                          SWS_BILINEAR, NULL, NULL, NULL);
 
+//    av_image_alloc(dst_data, dst_linesize,
+//                   codecContext->width, codecContext->height, AV_PIX_FMT_RGBA, 1);
     av_image_alloc(dst_data, dst_linesize,
-                   codecContext->width, codecContext->height, AV_PIX_FMT_RGBA, 1);
+                   oVideoWidth, oVideoHeight, AV_PIX_FMT_RGBA, 1);
 
     double delay_time_per_frame = 1.0 / fps;
 
@@ -163,83 +228,99 @@ void VideoChannel::video_play() {
         }
         if (!ret) {
             //取数据包失败
+            LOGE("get frames fail");
             continue;
         }
 
-        sws_scale(sws_ctx, frame->data, frame->linesize, 0, codecContext->height, dst_data, dst_linesize);
+//        av_usleep(1 * 1000000);
+//        releaseAVFrame(&frame);
+//        continue;
+
+
+   //     sws_scale(sws_ctx, frame->data, frame->linesize, 0, codecContext->height, dst_data, dst_linesize);
+        sws_scale(sws_ctx, frame->data, frame->linesize, 0, oVideoHeight, dst_data, dst_linesize);
+
+
+
+
 
         //extra_delay = repeat_pict / (2*fps)
         extra_delay = frame->repeat_pict / (2 * fps);
         real_delay = delay_time_per_frame + extra_delay;
-        //单位是：微秒
-        video_time = frame->best_effort_timestamp * av_q2d(time_base);
-        LOGE("vidoe time: %lf, %ld", video_time,  frame->best_effort_timestamp);
-        LOGE("av_gettime(): %ld" , av_gettime());
 
-        if (clockTime) {
-            if (frame->best_effort_timestamp == 0) {
-                int64_t basetime = clockTime->getClockTime();
-                clockTime->setClockBasetime(basetime);
-            } else {
-                running_time = clockTime->getClockTime() - clockTime->getClockBasetime();
-                clock_time_diff = (int64_t)(video_time * 1000000) - running_time;
+        av_usleep(real_delay * 1000000);
+//        //单位是：微秒
+//        video_time = frame->best_effort_timestamp * av_q2d(time_base);
+//        LOGE("vidoe time: %lf, %ld", video_time,  frame->best_effort_timestamp);
+//   //     LOGE("av_gettime(): %ld" , av_gettime());
+//
+//        if (clockTime) {
+//            if (frame->best_effort_timestamp == 0) {
+//                int64_t basetime = clockTime->getClockTime();
+//                clockTime->setClockBasetime(basetime);
+//            } else {
+//                running_time = clockTime->getClockTime() - clockTime->getClockBasetime();
+//                clock_time_diff = (int64_t)(video_time * 1000000) - running_time;
+//
+//                LOGE("clock_time_diff: %ld" , clock_time_diff);
+//                if (clock_time_diff > 0) {
+//                    if (clock_time_diff > 1000000) {
+//                        av_usleep((real_delay * 2) * 1000000);
+//                    } else {
+//                        av_usleep(((real_delay * 1000000) + clock_time_diff));
+//                    }
+//                } else if (clock_time_diff < 0) {
+//                    if (abs(clock_time_diff) >= 50000) {
+//                        frames.sync();
+//                        continue;
+//                    }
+//                }
+//            }
+//        } else if (!audioChannel) {
+//            av_usleep(real_delay * 1000000);
+//
+//            if (javaCallHelper) {
+//                javaCallHelper->onProgress(THREAD_CHILD, video_time);
+//            }
+//        } else {
+//            audio_time = audioChannel->audio_time;
+//            time_diff = video_time - audio_time;
+//            if (time_diff > 0) {
+//                LOGE("视频比音频快：%lf", time_diff);
+//
+//                if (time_diff > 1) {
+//                    av_usleep((real_delay * 2) * 1000000);
+//                } else {
+//                    av_usleep((real_delay + time_diff) * 1000000);
+//                }
+//            } else if (time_diff < 0) {
+//                LOGE("音频比视频快: %lf", fabs(time_diff));
+//                //音频比视频快：追音频（尝试丢视频包）
+//                //视频包：packets 和 frames
+//                if (fabs(time_diff) >= 0.05) {
+//                    //时间差如果大于0.05，有明显的延迟感
+//                    //丢包：要操作队列中数据！一定要小心！
+////                    packets.sync();
+//                    frames.sync();
+//                    continue;
+//                }
+//            }
+//        }
 
-                LOGE("clock_time_diff: %ld" , clock_time_diff);
-                if (clock_time_diff > 0) {
-                    if (clock_time_diff > 1000000) {
-                        av_usleep((real_delay * 2) * 1000000);
-                    } else {
-                        av_usleep(((real_delay * 1000000) + clock_time_diff));
-                    }
-                } else if (clock_time_diff < 0) {
-                    if (abs(clock_time_diff) >= 50000) {
-                        frames.sync();
-                        continue;
-                    }
-                }
-            }
-        } else if (!audioChannel) {
-            av_usleep(real_delay * 1000000);
-
-            if (javaCallHelper) {
-                javaCallHelper->onProgress(THREAD_CHILD, video_time);
-            }
-        } else {
-            audio_time = audioChannel->audio_time;
-            time_diff = video_time - audio_time;
-            if (time_diff > 0) {
-           //     LOGE("视频比音频快：%lf", time_diff);
-
-                if (time_diff > 1) {
-                    av_usleep((real_delay * 2) * 1000000);
-                } else {
-                    av_usleep((real_delay + time_diff) * 1000000);
-                }
-            } else if (time_diff < 0) {
-            //    LOGE("音频比视频快: %lf", fabs(time_diff));
-                //音频比视频快：追音频（尝试丢视频包）
-                //视频包：packets 和 frames
-                if (fabs(time_diff) >= 0.05) {
-                    //时间差如果大于0.05，有明显的延迟感
-                    //丢包：要操作队列中数据！一定要小心！
-//                    packets.sync();
-                    frames.sync();
-                    continue;
-                }
-            }
-        }
-
-        renderCallback(dst_data[0], dst_linesize[0], codecContext->width, codecContext->height);
+//        renderCallback(dst_data[0], dst_linesize[0], codecContext->width, codecContext->height);
+        renderCallback(dst_data[0], dst_linesize[0], oVideoWidth, oVideoHeight);
 
         releaseAVFrame(&frame);
+    //    frames.pop(frame);
     }
 
     releaseAVFrame(&frame);
 
     isPlaying = 0;
 
-    av_free(dst_data[0]);
+    av_freep(&dst_data[0]);
     sws_freeContext(sws_ctx);
+    LOGE("leave video_play");
 }
 
 void VideoChannel::setRenderCallback(RenderCallback callback) {

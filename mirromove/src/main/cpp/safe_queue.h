@@ -7,6 +7,7 @@
 
 #include <queue>
 #include <pthread.h>
+#include "myqueue.h"
 
 using namespace std;
 
@@ -54,6 +55,24 @@ public:
             ret = 1;
         }
 
+
+        pthread_mutex_unlock(&mutex);
+
+        return ret;
+    }
+
+    int front(T &value) {
+        int ret = 0;
+
+        pthread_mutex_lock(&mutex);
+        while (work && q.empty()) {
+            pthread_cond_wait(&cond, &mutex);   //FIXME: 会和clear造成死锁
+        }
+        if (!q.empty()) {
+            value = q.front();
+            ret = 1;
+        }
+
         pthread_mutex_unlock(&mutex);
 
         return ret;
@@ -73,11 +92,12 @@ public:
         unsigned int size = q.size();
         for (int i = 0; i < size; i++) {
             T value = q.front();
+         //   q.pop();
             if (releaseCallback) {
                 releaseCallback(&value);
             }
 
-            q.pop(); //FIXME:是不是应该在releaseCall之前
+            q.pop();
         }
 
         pthread_mutex_unlock(&mutex);
@@ -111,13 +131,15 @@ public:
 
         pthread_mutex_lock(&mutex);
 
-        syncHandle(q);
+   //     syncHandle(q);
 
         pthread_mutex_unlock(&mutex);
     }
 
 private:
     queue<T> q;
+
+  //  concurrent_queue<T> q;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 

@@ -11,15 +11,17 @@
 #include "VideoChannel.h"
 #include "macro.h"
 #include <pthread.h>
+
 #include "net/PlayClockTime.h"
 
 extern "C" {
 #include <libavformat/avformat.h>
+#include <libavfilter/avfilter.h>
 };
 
 class FFmpegPlayer {
 public:
-    FFmpegPlayer(JavaCallHelper *javaCallHelper, char *dataSource);
+    FFmpegPlayer(JavaCallHelper *javaCallHelper, char *dataSource, int rotate);
     ~FFmpegPlayer();
 
     void prepare();
@@ -37,6 +39,10 @@ public:
     void setRenderCallback(RenderCallback renderCallback);
 
     int getDuration() const;
+
+    int getVideoWidth() const;
+
+    int getVideoHeight() const;
 
     void useClockTime(PlayClockTime *clockTime);
 
@@ -62,7 +68,25 @@ private:
 
     int duration;
 
+    int videoWidth = 0;
+
+    int videoHeight = 0;
+
+    int oVideoWidth = 0;
+
+    int oVideoHeight = 0;
+
+    int rotateAngle = 0;
+
     PlayClockTime *clockTime = 0;
+
+    AVCodecContext *codecContext = 0; //FIXME:未释放
+
+    AVFilterContext *buffersink_ctx = 0;
+    AVFilterContext *buffersrc_ctx = 0;
+    AVFilterGraph *filter_graph = 0;
+
+    int init_filters(const char *filters_descr, int video_index);
 };
 
 #endif //NATIVEPLAYER_FFMPEGPLAYER_H

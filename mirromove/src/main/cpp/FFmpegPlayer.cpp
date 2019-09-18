@@ -1,15 +1,22 @@
 //
 // Created by llm on 19-8-29.
 //
+extern "C" {
+#include <libavutil/opt.h>
+};
 
 #include "FFmpegPlayer.h"
 
-FFmpegPlayer::FFmpegPlayer(JavaCallHelper *javaCallHelper, char *dataSource) {
+const char *filter_descr = "rotate=0";
+
+FFmpegPlayer::FFmpegPlayer(JavaCallHelper *javaCallHelper, char *dataSource, int rotate) {
     //参数robust放 jni 层判断
     this->javaCallHelper = javaCallHelper;
 
     this->dataSource = new char[strlen(dataSource) + 1];
     strcpy(this->dataSource, dataSource);
+
+    this->rotateAngle = rotate;
 }
 
 FFmpegPlayer::~FFmpegPlayer() {
@@ -32,6 +39,110 @@ void *task_stop(void *args) {
 
     return 0;//一定一定一定要返回0！！！
 }
+
+int FFmpegPlayer::init_filters(const char *filters_descr, int video_index)
+{
+    char args[512];
+    int ret = 0;
+    const AVFilter *buffersrc  = avfilter_get_by_name("buffer");
+    const AVFilter *buffersink = avfilter_get_by_name("buffersink");
+    AVFilterInOut *outputs = avfilter_inout_alloc();
+    AVFilterInOut *inputs  = avfilter_inout_alloc();
+    AVRational time_base = formatContext->streams[video_index]->time_base;
+    enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_RGBA, AV_PIX_FMT_NONE };
+
+    char   fstr[256];
+    int ow;
+    int oh;
+
+    filter_graph = avfilter_graph_alloc();
+    if (!outputs || !inputs || !filter_graph) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    /* buffer video source: the decoded frames from the decoder will be inserted here. */
+    snprintf(args, sizeof(args),
+             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
+             codecContext->width, codecContext->height, codecContext->pix_fmt,
+             time_base.num, time_base.den,
+             codecContext->sample_aspect_ratio.num, codecContext->sample_aspect_ratio.den);
+
+    ret = avfilter_graph_create_filter(&buffersrc_ctx, buffersrc, "in",
+                                       args, NULL, filter_graph);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot create buffer source\n");
+        goto end;
+    }
+
+    /* buffer video sink: to terminate the filter chain. */
+    ret = avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out",
+                                       NULL, NULL, filter_graph);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot create buffer sink\n");
+        goto end;
+    }
+
+//    ret = av_opt_set_int_list(buffersink_ctx, "pix_fmts", pix_fmts,
+//                              AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
+//    if (ret < 0) {
+//        av_log(NULL, AV_LOG_ERROR, "Cannot set output pixel format\n");
+//        goto end;
+//    }
+
+    /*
+ * Set the endpoints for the filter graph. The filter_graph will
+ * be linked to the graph described by filters_descr.
+ */
+
+    /*
+     * The buffer source output must be connected to the input pad of
+     * the first filter described by filters_descr; since the first
+     * filter input label is not specified, it is set to "in" by
+     * default.
+     */
+    outputs->name       = av_strdup("in");
+    outputs->filter_ctx = buffersrc_ctx;
+    outputs->pad_idx    = 0;
+    outputs->next       = NULL;
+
+    /*
+     * The buffer sink input must be connected to the output pad of
+     * the last filter described by filters_descr; since the last
+     * filter output label is not specified, it is set to "out" by
+     * default.
+     */
+    inputs->name       = av_strdup("out");
+    inputs->filter_ctx = buffersink_ctx;
+    inputs->pad_idx    = 0;
+    inputs->next       = NULL;
+
+
+//    oVideoWidth = abs((int)(codecContext->width  * cos(angle * M_PI / 180)))
+//             + abs((int)(codecContext->height * sin(angle * M_PI / 180)));
+//    oVideoHeight = abs((int)(codecContext->width  * sin(angle * M_PI / 180)))
+//             + abs((int)(codecContext->height * cos(angle * M_PI / 180)));
+    oVideoWidth = codecContext->width;
+    oVideoHeight = codecContext->height;
+    LOGE("ow: %d, oh = %d", ow, oh);
+//    sprintf(fstr, "rotate=%d*PI/180:%d:%d", angle, oVideoWidth, oVideoHeight);
+    sprintf(fstr, "rotate=%d*PI/180", rotateAngle);
+
+
+    if ((ret = avfilter_graph_parse_ptr(filter_graph, fstr,
+                                        &inputs, &outputs, NULL)) < 0)
+        goto end;
+
+    if ((ret = avfilter_graph_config(filter_graph, NULL)) < 0)
+        goto end;
+
+    end:
+    avfilter_inout_free(&inputs);
+    avfilter_inout_free(&outputs);
+
+    return ret;
+}
+
 
 void FFmpegPlayer::prepare() {
     LOGE("FFmpegPlayer::prepare()");
@@ -88,7 +199,7 @@ void FFmpegPlayer::_prepare() {
             return;
         }
 
-        AVCodecContext *codecContext = avcodec_alloc_context3(codec);
+        codecContext = avcodec_alloc_context3(codec);
         if (!codecContext) {
             LOGE("avcodec_alloc_context3");
             if (javaCallHelper) {
@@ -116,12 +227,17 @@ void FFmpegPlayer::_prepare() {
         AVRational time_base = stream->time_base;
 
         if (codecParameters->codec_type == AVMEDIA_TYPE_AUDIO) {
-     //       audioChannel = new AudioChannel(i, codecContext, time_base, javaCallHelper);
+      //      audioChannel = new AudioChannel(i, codecContext, time_base, javaCallHelper);
         } else if (codecParameters->codec_type == AVMEDIA_TYPE_VIDEO) {
             AVRational frame_rate = stream->avg_frame_rate;
             int fps = av_q2d(frame_rate);
 
-            videoChannel = new VideoChannel(i, codecContext, fps, time_base, javaCallHelper);
+            oVideoWidth = codecContext->width;
+            oVideoHeight = codecContext->height;
+
+          //  init_filters(filter_descr, i);
+
+            videoChannel = new VideoChannel(i, codecContext, fps, time_base, javaCallHelper, buffersink_ctx, buffersrc_ctx, oVideoWidth, oVideoHeight);
             videoChannel->setRenderCallback(renderCallback);
         }
     }
@@ -181,7 +297,40 @@ void FFmpegPlayer::_start() {
                 audioChannel->packets.push(packet);
             }
         } else if (ret == AVERROR_EOF) {
+      //      LOGE("av_read_frame AVERROR_EOF");
+            //FIXME:解码和显示的线程可能还没处理完，不能直接推出
 
+            if (videoChannel && audioChannel) {
+                if (videoChannel->packets.empty() && videoChannel->frames.empty()
+                    && audioChannel->packets.empty() && audioChannel->frames.empty()) {
+                    LOGE("play end both");
+                    av_packet_free(&packet);
+                    if (javaCallHelper) {
+                        javaCallHelper->onCompletion(THREAD_CHILD);
+                    }
+                    break;
+                }
+            } else if (videoChannel) {
+                if (videoChannel->packets.empty() && videoChannel->frames.empty()) {
+                    LOGE("play end video");
+                    av_packet_free(&packet);
+                    if (javaCallHelper) {
+                        javaCallHelper->onCompletion(THREAD_CHILD);
+                    }
+                    break;
+                }
+            } else if (audioChannel) {
+                if (audioChannel->packets.empty() && audioChannel->frames.empty()) {
+                    av_packet_free(&packet);
+                    LOGE("play end audio");
+                    if (javaCallHelper) {
+                        javaCallHelper->onCompletion(THREAD_CHILD);
+                    }
+                    break;
+                }
+            }
+
+            av_packet_free(&packet);
         } else {
             LOGE("av_read_frame error:%s", av_err2str(ret));
             av_packet_free(&packet);
@@ -229,6 +378,13 @@ void FFmpegPlayer::_stop() {
     pthread_join(pid_start, 0);
 
     LOGE("FFmpegPlayer::_stop2() ");
+
+
+    if (codecContext) {
+        avcodec_free_context(&codecContext);
+        codecContext = 0;
+    }
+
     if (formatContext) {
         avformat_close_input(&formatContext);
         avformat_free_context(formatContext);
@@ -237,10 +393,20 @@ void FFmpegPlayer::_stop() {
     LOGE("FFmpegPlayer::_stop3()");
     DELETE(videoChannel);
     DELETE(audioChannel);
+
+  //  DELETE(ffmpeg);
 }
 
 int FFmpegPlayer::getDuration() const {
     return duration;
+}
+
+int FFmpegPlayer::getVideoWidth() const {
+    return oVideoWidth;
+}
+
+int FFmpegPlayer::getVideoHeight() const {
+    return oVideoHeight;
 }
 
 void FFmpegPlayer::useClockTime(PlayClockTime *clockTime) {

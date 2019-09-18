@@ -66,10 +66,7 @@ struct motor_a3901{
 #define MOTOR_DIRECTION_UP 1
 #define MOTOR_DIRECTION_DOWN 0
 
-static int motor_left_pi_state = 0;
-static int motor_right_pi_state = 0;
-static int motor_up_pi_state = 0;
-static int motor_down_pi_state = 0;
+
 
 static bool bHorizontalMotorEnable = false;
 static bool bVerticalMotorEnable = false;

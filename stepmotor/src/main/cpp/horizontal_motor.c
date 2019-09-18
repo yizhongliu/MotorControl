@@ -28,7 +28,8 @@ static struct timeval ts;
 int gHDelay = 2000;
 int gHDirection = 0;
 
-
+extern int motor_left_pi_state;
+extern int motor_right_pi_state;
 
 static int getLeftRightPiState(int fd, int gpio_num, int gpio_state)
 {

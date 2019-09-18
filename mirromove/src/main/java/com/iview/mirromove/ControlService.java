@@ -21,6 +21,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.iview.mirromove.util.JSONParser;
 import com.iview.mirromove.util.MsgType;
+import com.iview.stepmotor.MotorControl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,10 @@ public class ControlService extends Service {
 
     private final static int MAX_HDELAY = 300;
     private final static int MAX_VDELAY = 1200;
+
+    private final static int BASE_HSTEP = 200;
+    private final static int BASE_VSTEP = 50;
+    private final static int BASE_DELAY = 200;
 
     private MessageReceiver mMessageReceiver;
 
@@ -129,11 +134,11 @@ public class ControlService extends Service {
                         }
 
                         String message = msg.getData().getString("message");
-                        HandlePathPlanningMove(message);
-//                        if (MotorControlHelper.getInstance(ControlService.this).getMotorRunning() == false) {
-//                            String message = msg.getData().getString("message");
-//                            HandlePathPlanningMove(message);
-//                        }
+//                        HandlePathPlanningMove(message);
+                        if (MotorControlHelper.getInstance(ControlService.this).getMotorRunning() == false) {
+  //                          String message = msg.getData().getString("message");
+                            HandlePathPlanningMove(message);
+                        }
                         break;
                     case MSG_PATH_PLAN_SHOW:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_SHOW");
@@ -158,6 +163,10 @@ public class ControlService extends Service {
                             cmdIndex = 0;
                         }
 
+                        if (playCallBack != null) {
+                            playCallBack.stop();
+                        }
+
                         MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 100000, MotorControlHelper.HMotorLeftDirection, 200);
                         MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 100000, MotorControlHelper.VMotorUpDirection, 1000);
 
@@ -180,9 +189,13 @@ public class ControlService extends Service {
                                     Log.e(TAG, "move angle:" + angle);
 
                                     controlMotorMove(angle);
+
+                                    if (playCallBack != null) {
+                                        playCallBack.stop();
+                                    }
                                 } else if (action.equals(MsgType.ACTION_SHOW)) {
                                     String url = pathPlanningList.get(cmdIndex).getUrl();
-                                    float rotation = pathPlanningList.get(cmdIndex).getRotateAngle();
+                                    int rotation = pathPlanningList.get(cmdIndex).getRotateAngle();
                                     int showTime = pathPlanningList.get(cmdIndex).getImgDisplayTime();
 
                                     if (playCallBack != null) {
@@ -280,6 +293,8 @@ public class ControlService extends Service {
                     }
                     if (action.equals(MsgType.ACTION_START)) {
                         mHandler.sendEmptyMessage(MSG_PATH_PLAN_START);
+                    } else if (action.equals(MsgType.ACTION_STOP)) {
+                        mHandler.sendEmptyMessage(MSG_PATH_PLAN_STOP);
                     } else if (action.equals(MsgType.ACTION_MOVE)) {
 
                         mHandler.removeMessages(MSG_PATH_PLAN_MOVE);
@@ -333,12 +348,14 @@ public class ControlService extends Service {
                         Bundle bundle = new Bundle();
                         bundle.putString("message" , messge);
                         runMessage.setData(bundle);
+                        mHandler.sendMessage(runMessage);
                     } else if (action.equals(MsgType.ACTION_STOP)) {
                         Message runMessage = new Message();
                         runMessage.what = MSG_AUTORUNNING_STOP;
                         Bundle bundle = new Bundle();
                         bundle.putString("message", messge);
                         runMessage.setData(bundle);
+                        mHandler.sendMessage(runMessage);
                     }
                 }
 
@@ -350,6 +367,10 @@ public class ControlService extends Service {
     private void HandlePathPlanningStart() {
 
         bMotorReset = true;
+
+        if (playCallBack != null) {
+            playCallBack.stop();
+        }
 
         if (bPathPlanRunning == true) {
             bPathPlanRunning = false;
@@ -383,7 +404,7 @@ public class ControlService extends Service {
         String type = jsonParser.getType();
 
         String url = jsonParser.getUrl();
-        float rotation = jsonParser.getRotation();
+        int rotation = jsonParser.getRotation();
         int showTime = jsonParser.getShowTime();
 
         if (type.equals(MsgType.TYPE_PATH_PLANNING)) {
@@ -395,7 +416,7 @@ public class ControlService extends Service {
     private void HandlePathPlanningPreview(String message) {
         JSONParser jsonParser = new JSONParser(message);
         String url = jsonParser.getUrl();
-        float rotation = jsonParser.getRotation();
+        int rotation = jsonParser.getRotation();
         int showTime = jsonParser.getShowTime();
 
         if (playCallBack != null) {
@@ -405,7 +426,7 @@ public class ControlService extends Service {
 
     private void HandleSetParam(String message) {
         JSONParser jsonParser = new JSONParser(message);
-        float rotation = jsonParser.getRotation();
+        int rotation = jsonParser.getRotation();
 
         if (playCallBack != null) {
             playCallBack.setParam(rotation);
@@ -419,21 +440,32 @@ public class ControlService extends Service {
         int vDir = MotorControlHelper.VMotorUpDirection;
         int vDelay = BASE_VDELAY;
         int duration = 300;
+
+        int hSteps = BASE_HSTEP;
+        int vSteps = BASE_VSTEP;
+        int delay = BASE_DELAY;
+
         if (angle == 0 || angle == 360) {
             hDir = MotorControlHelper.HMotorRightDirection;
             vDelay = 0;
+            vSteps = 0;
         } else if (angle == 90) {
-            vDir = MotorControlHelper.VMotorUpDirection;
+            vDir = MotorControlHelper.VMotorDownDirection;
             hDelay = 0;
+            hSteps = 0;
+            delay = BASE_DELAY * 4;
         } else if (angle == 180) {
             hDir = MotorControlHelper.HMotorLeftDirection;
             vDelay = 0;
+            vSteps = 0;
         } else if (angle == 270) {
-            vDir = MotorControlHelper.VMotorDownDirection;
+            vDir = MotorControlHelper.VMotorUpDirection;
             hDelay = 0;
+            hSteps = 0;
+            delay = BASE_DELAY * 4;
         } else if (angle > 0 && angle < 90) {
             hDir = MotorControlHelper.HMotorRightDirection;
-            vDir = MotorControlHelper.VMotorUpDirection;
+            vDir = MotorControlHelper.VMotorDownDirection;
 
 //            double tag = Math.tan(Math.toRadians(angle));
 //
@@ -444,7 +476,7 @@ public class ControlService extends Service {
 
         } else if (angle > 90 && angle < 180) {
             hDir = MotorControlHelper.HMotorLeftDirection;
-            vDir = MotorControlHelper.VMotorUpDirection;
+            vDir = MotorControlHelper.VMotorDownDirection;
 
 //            double tag = Math.tan(Math.toRadians(angle));
 //
@@ -455,7 +487,7 @@ public class ControlService extends Service {
 
         } else if (angle > 180 && angle < 270) {
             hDir = MotorControlHelper.HMotorLeftDirection;
-            vDir = MotorControlHelper.VMotorDownDirection;
+            vDir = MotorControlHelper.VMotorUpDirection;
 
 //            double tag = Math.tan(Math.toRadians(angle));
 //
@@ -466,7 +498,7 @@ public class ControlService extends Service {
             vDelay = caculateVDelay(angle);
         } else if (angle > 270 && angle < 360) {
             hDir = MotorControlHelper.HMotorRightDirection;
-            vDir = MotorControlHelper.VMotorDownDirection;
+            vDir = MotorControlHelper.VMotorUpDirection;
 
 //            double tag = Math.tan(Math.toRadians(angle));
 //
@@ -476,7 +508,9 @@ public class ControlService extends Service {
             vDelay = caculateVDelay(angle);
         }
 
-        MotorControlHelper.getInstance(this).controlMultiMotor(hDir, hDelay, vDir, vDelay, duration);
+   //     MotorControlHelper.getInstance(this).controlMultiMotor(hDir, hDelay, vDir, vDelay, duration);
+
+        MotorControlHelper.getInstance(this).controlMultiMotor2(hSteps, vSteps, hDir, vDir, delay);
     }
 
     public int caculateHDelay(int angle) {
@@ -507,7 +541,7 @@ public class ControlService extends Service {
     public class PathPlanning {
         private String action;
         private int angle;
-        private float rotateAngle;
+        private int rotateAngle;
         private String url;
 
         public int getImgDisplayTime() {
@@ -520,7 +554,7 @@ public class ControlService extends Service {
 
         private int imgDisplayTime;
 
-        PathPlanning(String action, int angle, float rotateAngle, String url, int imgDisplayTime) {
+        PathPlanning(String action, int angle, int rotateAngle, String url, int imgDisplayTime) {
             this.action = action;
             this.angle = angle;
             this.rotateAngle = rotateAngle;
@@ -544,11 +578,11 @@ public class ControlService extends Service {
             this.angle = angle;
         }
 
-        public float getRotateAngle() {
+        public int getRotateAngle() {
             return rotateAngle;
         }
 
-        public void setRotateAngle(float rotateAngle) {
+        public void setRotateAngle(int rotateAngle) {
             this.rotateAngle = rotateAngle;
         }
 
