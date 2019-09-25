@@ -1,259 +1,129 @@
 #include <jni.h>
 #include <string>
+#include "NEFFmpeg.h"
 #include <android/native_window_jni.h>
-#include <android/log.h>
-#include "FFmpegPlayer.h"
-#include "net/NetTimeProvider.h"
-#include "net/NetTimeClient.h"
 
+extern "C" {
+#include "include/libavutil/avutil.h"
+}
 
-//#include <fstream>
-//#include "MemoryTrace.hpp"
-static JavaVM *java_vm;
+JavaVM *javaVM = 0;
 JavaCallHelper *javaCallHelper = 0;
-FFmpegPlayer *ffmpeg = 0;
+NEFFmpeg *ffmpeg = 0;
 ANativeWindow *window = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;//静态初始化mutex
 
-NetTimeProvider *netTimeProvider = 0;
-NetTimeClient *netTimeClient = 0;
+//extern "C" JNIEXPORT jstring JNICALL
+//Java_com_netease_player_MainActivity_stringFromJNI(
+//        JNIEnv *env,
+//        jobject /* this */) {
+//    std::string hello = "Hello from C++";
+////    return env->NewStringUTF(hello.c_str());
+//    return env->NewStringUTF(av_version_info());
+//}
 
+jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+    javaVM = vm;
+    return JNI_VERSION_1_4;
+}
 
 //1，data;2，linesize；3，width; 4， height
 void renderFrame(uint8_t *src_data, int src_lineSize, int width, int height) {
     pthread_mutex_lock(&mutex);
-
     if (!window) {
         pthread_mutex_unlock(&mutex);
         return;
     }
-
-    ANativeWindow_setBuffersGeometry(window, width, height, WINDOW_FORMAT_RGBA_8888);
-
+    ANativeWindow_setBuffersGeometry(window, width,
+                                     height,
+                                     WINDOW_FORMAT_RGBA_8888);
     ANativeWindow_Buffer window_buffer;
-    if (ANativeWindow_lock(window, &window_buffer, 0) != 0) {
+    if (ANativeWindow_lock(window, &window_buffer, 0)) {
         ANativeWindow_release(window);
         window = 0;
         pthread_mutex_unlock(&mutex);
         return;
     }
-
+    //把buffer中的数据进行赋值（修改）
     uint8_t *dst_data = static_cast<uint8_t *>(window_buffer.bits);
-    int dst_lineSize = window_buffer.stride * 4;
-
-    for (int i = 0; i < window_buffer.height; i++) {
+    int dst_lineSize = window_buffer.stride * 4;//ARGB
+    //逐行拷贝
+    for (int i = 0; i < window_buffer.height; ++i) {
         memcpy(dst_data + i * dst_lineSize, src_data + i * src_lineSize, dst_lineSize);
     }
     ANativeWindow_unlockAndPost(window);
     pthread_mutex_unlock(&mutex);
 }
 
-extern "C" JNIEXPORT void JNICALL
-native_prepare (
-        JNIEnv *env,
-        jobject instance, jstring path, jint rotate) {
+extern "C"
+JNIEXPORT void JNICALL
+Java_pri_tool_nativeplayer_NativePlayer_prepareNative(JNIEnv *env, jobject instance, jstring dataSource_) {
+    const char *dataSource = env->GetStringUTFChars(dataSource_, 0);
 
-    const char *dataSource = env->GetStringUTFChars(path, 0);
-
-    javaCallHelper = new JavaCallHelper(java_vm, env, instance);
-    ffmpeg = new FFmpegPlayer(javaCallHelper, const_cast<char *>(dataSource), rotate);
+    javaCallHelper = new JavaCallHelper(javaVM, env, instance);
+    ffmpeg = new NEFFmpeg(javaCallHelper, const_cast<char *>(dataSource));
     ffmpeg->setRenderCallback(renderFrame);
     ffmpeg->prepare();
 
-    env->ReleaseStringUTFChars(path, dataSource);
+    env->ReleaseStringUTFChars(dataSource_, dataSource);
 }
 
-extern "C" JNIEXPORT void JNICALL
-native_start (
-        JNIEnv *env,
-        jobject /* this */) {
+extern "C"
+JNIEXPORT void JNICALL
+Java_pri_tool_nativeplayer_NativePlayer_startNative(JNIEnv *env, jobject instance) {
     if (ffmpeg) {
         ffmpeg->start();
     }
 
 }
 
-extern "C" JNIEXPORT void JNICALL
-native_set_surface (
-        JNIEnv *env,
-        jobject /* this */, jobject surface) {
-
+extern "C"
+JNIEXPORT void JNICALL
+Java_pri_tool_nativeplayer_NativePlayer_setSurfaceNative(JNIEnv *env, jobject instance, jobject surface) {
     pthread_mutex_lock(&mutex);
-
+    //先释放之前的显示窗口
     if (window) {
         ANativeWindow_release(window);
         window = 0;
     }
-
+    //创建新的窗口用于视频显示
     window = ANativeWindow_fromSurface(env, surface);
-
     pthread_mutex_unlock(&mutex);
 
 }
 
-extern "C" JNIEXPORT void JNICALL
-native_stop (JNIEnv *env,
-             jobject /* this */) {
-    if (ffmpeg) {
-        ffmpeg->stop();
-    }
-}
-
-extern "C" JNIEXPORT void JNICALL
-native_release (JNIEnv *env,
-             jobject /* this */) {
-    LOGE("native_release ");
- //   pthread_mutex_lock(&mutex);
+extern "C"
+JNIEXPORT void JNICALL
+Java_pri_tool_nativeplayer_NativePlayer_releaseNative(JNIEnv *env, jobject thiz) {
+    pthread_mutex_lock(&mutex);
     if (window) {
         //把老的释放
         ANativeWindow_release(window);
         window = 0;
     }
- //   pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&mutex);
     DELETE(ffmpeg);
 }
-
-extern "C" JNIEXPORT jint JNICALL
-native_getDuration (JNIEnv *env,
-                jobject /* this */) {
-    jint ret = 0;
+extern "C"
+JNIEXPORT void JNICALL
+Java_pri_tool_nativeplayer_NativePlayer_stopNative(JNIEnv *env, jobject thiz) {
     if (ffmpeg) {
-        ret = ffmpeg->getDuration();
+        ffmpeg->stop();
     }
-    return ret;
 }
-
-extern "C" JNIEXPORT jint JNICALL
-native_getVideoWidth (JNIEnv *env,
-                    jobject /* this */) {
-    jint ret = 0;
+extern "C"
+JNIEXPORT jint JNICALL
+Java_pri_tool_nativeplayer_NativePlayer_getDurationNative(JNIEnv *env, jobject thiz) {
     if (ffmpeg) {
-        ret = ffmpeg->getVideoWidth();
+        return ffmpeg->getDuration();
     }
-    return ret;
+    return 0;
 }
 
-extern "C" JNIEXPORT jint JNICALL
-native_getVideoHeight (JNIEnv *env,
-                    jobject /* this */) {
-    jint ret = 0;
+extern "C"
+JNIEXPORT void JNICALL
+Java_pri_tool_nativeplayer_NativePlayer_seekToNative(JNIEnv *env, jobject thiz, jint playProgress) {
     if (ffmpeg) {
-        ret = ffmpeg->getVideoHeight();
+        ffmpeg->seekTo(playProgress);
     }
-    return ret;
-}
-
-extern "C" JNIEXPORT void JNICALL
-native_start_net_time_provider (JNIEnv *env,
-                    jobject /* this */,
-                    jstring ip,
-                    jint port) {
-    const char *ip_addr = env->GetStringUTFChars(ip, 0);
-
-    netTimeProvider = new NetTimeProvider(const_cast<char *>(ip_addr), port);
-    netTimeProvider->start();
-
-    env->ReleaseStringUTFChars(ip, ip_addr);
-}
-
-extern "C" JNIEXPORT void JNICALL
-native_stop_net_time_provider (JNIEnv *env,
-                                jobject /* this */) {
-
-    if (netTimeProvider) {
-        netTimeProvider->stop();
-        delete netTimeProvider;
-        netTimeProvider = 0;
-    }
-}
-
-extern "C" JNIEXPORT void JNICALL
-native_start_net_time_client (JNIEnv *env,
-                                jobject /* this */,
-                                jstring ip,
-                                jint port) {
-    const char *ip_addr = env->GetStringUTFChars(ip, 0);
-
-    netTimeClient = new NetTimeClient(const_cast<char *>(ip_addr), port);
-    netTimeClient->start();
-
-    env->ReleaseStringUTFChars(ip, ip_addr);
-}
-
-extern "C" JNIEXPORT void JNICALL
-native_stop_net_time_client (JNIEnv *env,
-                               jobject /* this */) {
-
-    if (netTimeClient) {
-        netTimeClient->stop();
-        delete netTimeClient;
-        netTimeClient = 0;
-    }
-}
-
-extern "C" JNIEXPORT void JNICALL
-native_use_play_clock_time (JNIEnv *env,
-                             jobject /* this */) {
-    if (ffmpeg) {
-        PlayClockTime *playClockTime = new PlayClockTime();
-        ffmpeg->useClockTime(playClockTime);
-    }
-}
-
-char *mm = NULL;
-extern "C" JNIEXPORT void JNICALL
-native_mn_leak (JNIEnv *env,
-                            jobject /* this */) {
-//    leaktracer::MemoryTrace::GetInstance().startMonitoringAllThreads();
-//    mm = (char *)malloc(4096);
-//    memset(mm,0x0,4096);
-//    leaktracer::MemoryTrace::GetInstance().stopAllMonitoring();
-//
-//    std::ofstream out;
-//    out.open("/sdcard/leak.out", std::ios_base::out);
-//    if (out.is_open()) {
-//        leaktracer::MemoryTrace::GetInstance().writeLeaks(out);
-//        LOGE("Write leaks success");
-//    } else {
-//        LOGE("Failed to write to \"leaks.out\"\n");
-//    }
-
-}
-
-/* List of implemented native methods */
-static JNINativeMethod native_methods[] = {
-        {"nativePrepare", "(Ljava/lang/String;I)V", (void *) native_prepare},
-        {"nativeStart", "()V", (void *) native_start},
-        {"nativeSetSurface", "(Ljava/lang/Object;)V", (void *) native_set_surface},
-        {"nativeStop", "()V", (void *) native_stop},
-        {"nativeRelease", "()V", (void *) native_release},
-        {"nativeGetDuration", "()I", (void *) native_getDuration},
-        {"nativeGetVideoWidth", "()I", (void *) native_getVideoWidth},
-        {"nativeGetVideoHeight", "()I", (void *) native_getVideoHeight},
-        {"nativeStartNetTimeProvider", "(Ljava/lang/String;I)V", (void *) native_start_net_time_provider},
-        {"nativeStopNetTimeProvider", "()V", (void *) native_stop_net_time_provider},
-        {"nativeStartNetTimeClient", "(Ljava/lang/String;I)V", (void *) native_start_net_time_client},
-        {"nativeStopNetTimeClient", "()V", (void *) native_stop_net_time_client},
-        {"nativeUsePlayClockTime", "()V", (void *) native_use_play_clock_time},
-        {"nativeMnLeak", "()V", (void *) native_mn_leak}
-};
-
-
-/* Library initializer */
-jint JNI_OnLoad(JavaVM *vm, void *reserved) {
-    JNIEnv *env = NULL;
-
-    java_vm = vm;
-
-    if (vm->GetEnv ((void **) &env, JNI_VERSION_1_4) != JNI_OK) {
-        __android_log_print (ANDROID_LOG_ERROR, "native-lib",
-                             "Could not retrieve JNIEnv");
-        return 0;
-    }
-    jclass klass = env->FindClass ("pri/tool/nativeplayer/NativePlayer");
-    env->RegisterNatives ( klass, native_methods,
-                           sizeof (native_methods) / sizeof ((native_methods)[0]));
-
-
-    return JNI_VERSION_1_4;
 }

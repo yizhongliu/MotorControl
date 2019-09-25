@@ -162,18 +162,18 @@ public class MainActivity extends Activity {
 
         mPlayer = new NativePlayer();
 
-        mPlayer.setOnPreparedListener(new NativePlayer.OnPreparedListener() {
+        mPlayer.setOnpreparedListener(new NativePlayer.OnpreparedListener() {
             @Override
             public void onPrepared() {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                       //  seekBar.setMax(player.getDuration());
-                    int width = mPlayer.getVideoWidth();
-                    int height = mPlayer.getVideoHeight();
-                    if (width != 0 && height != 0) {
-                        changeSurfaceSize(width, height, 0);
-                    }
+//                    int width = mPlayer.getVideoWidth();
+//                    int height = mPlayer.getVideoHeight();
+//                    if (width != 0 && height != 0) {
+//                        changeSurfaceSize(width, height, 0);
+//                    }
                     }
                 });
            //     player.usePlayClockTime();
@@ -189,15 +189,15 @@ public class MainActivity extends Activity {
             }
         });
 
-        mPlayer.setOnCompletionListener(new NativePlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion() {
-                if (controlService != null) {
-                    Log.e(TAG, "Video on Completion");
-                    controlService.onShowComplete();
-                }
-            }
-        });
+//        mPlayer.setOnCompletionListener(new NativePlayer.OnCompletionListener() {
+//            @Override
+//            public void onCompletion() {
+//                if (controlService != null) {
+//                    Log.e(TAG, "Video on Completion");
+//                    controlService.onShowComplete();
+//                }
+//            }
+//        });
 
         initBackThread();
     }
@@ -385,10 +385,10 @@ public class MainActivity extends Activity {
         public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             Log.d(TAG, "surfaceChanged Called");
 
-//            mVideoSurface = holder.getSurface();
-//            if (mPlayer != null) {
-//                mPlayer.setSurface(mVideoSurface);
-//            }
+            mVideoSurface = holder.getSurface();
+            if (mPlayer != null) {
+                mPlayer.setSurface(mVideoSurface);
+            }
         }
 
         @Override
@@ -397,10 +397,10 @@ public class MainActivity extends Activity {
 
             bVideoShow = true;
 
-            mVideoSurface = holder.getSurface();
-            if (mPlayer != null) {
-                mPlayer.setSurface(mVideoSurface);
-            }
+//            mVideoSurface = holder.getSurface();
+//            if (mPlayer != null) {
+//                mPlayer.setSurface(mVideoSurface);
+//            }
 
             mPlayer.prepare();
         }
@@ -435,9 +435,9 @@ public class MainActivity extends Activity {
                         if (bVideoShow) {
                             if (mPlayer != null) {
                                 mPlayer.stop();
-                                mPlayer.release();
+//                                mPlayer.release();
 //                                Log.e(TAG, "stop mPlayer");
-                                surfaceView.setVisibility(View.INVISIBLE);
+//                                surfaceView.setVisibility(View.INVISIBLE);
                                 bVideoShow = false;
                             }
                         }
@@ -445,19 +445,19 @@ public class MainActivity extends Activity {
                         bImageShow = true;
                         //   String path = Environment.getExternalStorageDirectory() + "/Pictures/test11.jpg";
 
-                        Bitmap bitmap = BitmapFactory.decodeFile(imageUrl);
-
-                 //       matrix.setRotate(rotation);
-                 //       bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),bitmap.getHeight(), matrix, true);
-
-                        imagePriView.setVisibility(View.VISIBLE);
-
-                        imagePriView.setImageBitmap(bitmap);
-                        imagePriView.setRotation(rotation);
-
-                        if (time != -1) {
-                            mBackHandler.sendEmptyMessageDelayed(MSG_IMAGE_DISMISS, time);
-                        }
+//                        Bitmap bitmap = BitmapFactory.decodeFile(imageUrl);
+//
+//                 //       matrix.setRotate(rotation);
+//                 //       bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),bitmap.getHeight(), matrix, true);
+//
+//                        imagePriView.setVisibility(View.VISIBLE);
+//
+//                        imagePriView.setImageBitmap(bitmap);
+//                        imagePriView.setRotation(rotation);
+//
+//                        if (time != -1) {
+//                            mBackHandler.sendEmptyMessageDelayed(MSG_IMAGE_DISMISS, time);
+//                        }
                     } else if (MediaFileUtil.isVideoFileType(url)) {
                         String absUrl =  Environment.getExternalStorageDirectory() + "/" + url;
                         //先隐藏图片显示
@@ -477,7 +477,7 @@ public class MainActivity extends Activity {
                     //    startPlay(absUrl, "video_hwaccel=0;video_rotate=30");
 
                         mPlayer.setDataSource(absUrl);
-                        mPlayer.setRotate(rotation);
+            //            mPlayer.setRotate(rotation);
 
                         if (bVideoShow) {
                             mPlayer.setSurface(mVideoSurface);
@@ -545,6 +545,7 @@ public class MainActivity extends Activity {
             }
         }
     }
+
 
     private void initBackThread() {
         mBackHandlerThread = new HandlerThread("show_thread");

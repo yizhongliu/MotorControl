@@ -1,22 +1,24 @@
 //
-// Created by llm on 19-8-29.
+// Created by Administrator on 2019/8/9.
 //
 
-#ifndef NATIVEPLAYER_AUDIOCHANNEL_H
-#define NATIVEPLAYER_AUDIOCHANNEL_H
+#ifndef NE_PLAYER_1_AUDIOCHANNEL_H
+#define NE_PLAYER_1_AUDIOCHANNEL_H
 
 #include "BaseChannel.h"
-
-#include <SLES/OpenSLES.h>
-#include <SLES/OpenSLES_Android.h>
 
 extern "C" {
 #include <libswresample/swresample.h>
 };
 
+#include <SLES/OpenSLES.h>
+#include <SLES/OpenSLES_Android.h>
+
 class AudioChannel : public BaseChannel {
 public:
-    AudioChannel(int id, AVCodecContext *avCodecContext, AVRational time_base, JavaCallHelper *javaCallHelper);
+    AudioChannel(int id, AVCodecContext *codecContext, AVRational time_base,
+                 JavaCallHelper *javaCallHelper);
+
     ~AudioChannel();
 
     void start();
@@ -37,7 +39,6 @@ public:
 
 private:
     SwrContext *swrContext = 0;
-
     pthread_t pid_audio_decode;
     pthread_t pid_audio_play;
     //引擎
@@ -53,6 +54,8 @@ private:
     //播放器队列接口
     SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue = 0;
 
+
 };
 
-#endif //NATIVEPLAYER_AUDIOCHANNEL_H
+
+#endif //NE_PLAYER_1_AUDIOCHANNEL_H

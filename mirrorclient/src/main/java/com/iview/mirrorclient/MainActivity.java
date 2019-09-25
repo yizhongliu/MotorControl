@@ -194,8 +194,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     jsonObject2.put("action", "Show");
 
                     JSONObject imgObj2 = new JSONObject();
-                    imgObj2.put("url", "test3.mp4");
-                   // imgObj2.put("url", "Billons.mp4");
+                  //  imgObj2.put("url", "test3.mp4");
+                    imgObj2.put("url", "Billons.mp4");
                     imgObj2.put("rotation", 30);
                     imgObj2.put("imgTime", -1);
 

@@ -1,18 +1,16 @@
 //
-// Created by llm on 19-8-29.
+// Created by Administrator on 2019/8/9.
 //
 
 
 #include "AudioChannel.h"
 #include "macro.h"
 
-extern "C" {
-#include <libswresample/swresample.h>
-};
+AudioChannel::AudioChannel(int id, AVCodecContext *codecContext, AVRational time_base,
+                           JavaCallHelper *javaCallHelper)
+        : BaseChannel(id, codecContext, time_base, javaCallHelper) {
 
-AudioChannel::AudioChannel(int id, AVCodecContext *avCodecContext, AVRational time_base,
-        JavaCallHelper *javaCallHelper) : BaseChannel(id, avCodecContext, time_base, javaCallHelper) {    //缓冲区大小如何定
-    // ？
+    //缓冲区大小如何定？
     out_channels = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
     out_sampleSize = av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
     out_sampleRate = 44100;
@@ -20,7 +18,6 @@ AudioChannel::AudioChannel(int id, AVCodecContext *avCodecContext, AVRational ti
     out_buffers_size = out_channels * out_sampleSize * out_sampleRate;
     out_buffers = static_cast<uint8_t *>(malloc(out_buffers_size));
     memset(out_buffers, 0, out_buffers_size);
-
     swrContext = swr_alloc_set_opts(0, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16,
                                     out_sampleRate, codecContext->channel_layout,
                                     codecContext->sample_fmt, codecContext->sample_rate,
@@ -49,68 +46,25 @@ void *task_audio_play(void *args) {
     return 0;//一定一定一定要返回0！！！
 }
 
-void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
-    AudioChannel *audioChannel = static_cast<AudioChannel *>(context);
-    int pcm_size = audioChannel->getPCM();
-    if (pcm_size > 0) {
-        (*bq)->Enqueue(bq, audioChannel->out_buffers, pcm_size);
-    }
-}
-
-
 void AudioChannel::start() {
-    isPlaying = true;
+    isPlaying = 1;
+    //设置队列状态为工作状态
     packets.setWork(1);
     frames.setWork(1);
-
     //解码
     pthread_create(&pid_audio_decode, 0, task_audio_decode, this);
     //播放
     pthread_create(&pid_audio_play, 0, task_audio_play, this);
 }
 
-void AudioChannel::stop() {
-    isPlaying = 0;
-    javaCallHelper = 0;
-    packets.setWork(0);
-    frames.setWork(0);
-    pthread_join(pid_audio_decode, 0);
-    pthread_join(pid_audio_play, 0);
-
-    /**
-    * 7、释放
-    */
-    //7.1 设置播放器状态为停止状态
-    if (bqPlayerPlay) {
-        (*bqPlayerPlay)->SetPlayState(bqPlayerPlay, SL_PLAYSTATE_STOPPED);
-    }
-    //7.2 销毁播放器
-    if (bqPlayerObject) {
-        (*bqPlayerObject)->Destroy(bqPlayerObject);
-        bqPlayerObject = 0;
-        bqPlayerBufferQueue = 0;
-    }
-    //7.3 销毁混音器
-    if (outputMixObject) {
-        (*outputMixObject)->Destroy(outputMixObject);
-        outputMixObject = 0;
-    }
-    //7.4 销毁引擎
-    if (engineObject) {
-        (*engineObject)->Destroy(engineObject);
-        engineObject = 0;
-        engineInterface = 0;
-    }
-}
 
 /**
  * 音频解码与视频一样
  */
 void AudioChannel::audio_decode() {
     AVPacket *packet = 0;
-    int ret;
     while (isPlaying) {
-        ret = packets.pop(packet);
+        int ret = packets.pop(packet);
         if (!isPlaying) {
             //如果停止播放了，跳出循环 释放packet
             break;
@@ -148,6 +102,15 @@ void AudioChannel::audio_decode() {
         frames.push(frame);// PCM数据
     }//end while
     releaseAVPacket(&packet);
+}
+
+//4.3 创建回调函数
+void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
+    AudioChannel *audioChannel = static_cast<AudioChannel *>(context);
+    int pcm_size = audioChannel->getPCM();
+    if (pcm_size > 0) {
+        (*bq)->Enqueue(bq, audioChannel->out_buffers, pcm_size);
+    }
 }
 
 void AudioChannel::audio_play() {
@@ -258,9 +221,15 @@ void AudioChannel::audio_play() {
 int AudioChannel::getPCM() {
     int pcm_data_size = 0;
     AVFrame *frame = 0;
-
-    int64_t running_time;
-    int64_t clock_time_diff;
+    /**
+     * 内存泄漏点
+     */
+//    SwrContext *swrContext = swr_alloc_set_opts(0, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16,
+//                                                out_sampleRate, codecContext->channel_layout,
+//                                                codecContext->sample_fmt, codecContext->sample_rate,
+//                                                0, 0);
+//    //初始化重采样上下文
+//    swr_init(swrContext);
 
     while (isPlaying) {
         int ret = frames.pop(frame);
@@ -272,6 +241,7 @@ int AudioChannel::getPCM() {
             //取数据包失败
             continue;
         }
+//        LOGE("音频播放中");
         //pcm数据在 frame中
         //这里获得的解码后pcm格式的音频原始数据，有可能与创建的播放器中设置的pcm格式不一样
         //重采样？example:resample
@@ -298,42 +268,56 @@ int AudioChannel::getPCM() {
 
         // 获取swr_convert转换后 out_samples个 *2 （16位）*2（双声道）
         pcm_data_size = out_samples * out_sampleSize * out_channels;
-
+//        frame->best_effort_timestamp*时间单位
 
         //获取音频时间 audio_time需要被VideoChannel获取
         audio_time = frame->best_effort_timestamp * av_q2d(time_base);
-        LOGE("audio_time &lf", audio_time);
-
-        if (clockTime) {
-            if (frame->best_effort_timestamp == 0) {
-                int64_t basetime = clockTime->getClockTime();
-                clockTime->setClockBasetime(basetime);
-            } else {
-                running_time = clockTime->getClockTime() - clockTime->getClockBasetime();
-                clock_time_diff = (int64_t) (audio_time * 1000000) - running_time;
-
-                LOGE("clock_time_diff: %ld", clock_time_diff);
-                if (clock_time_diff > 0) {
-                    if (clock_time_diff > 1000000) {
-                        av_usleep((delay * 2) * 1000000);
-                    } else {
-                        av_usleep(((delay * 1000000) + clock_time_diff));
-                    }
-                } else if (clock_time_diff < 0) {
-                    if (abs(clock_time_diff) >= 50000) {
-                        frames.sync();
-                        continue;
-                    }
-                }
-            }
-        }
         if (javaCallHelper) {
             javaCallHelper->onProgress(THREAD_CHILD, audio_time);
         }
-
         break;
 
     }//end while
     releaseAVFrame(&frame);
     return pcm_data_size;
+}
+
+/**
+ * 停止音频释放
+ */
+void AudioChannel::stop() {
+    isPlaying = 0;
+    javaCallHelper = 0;
+    packets.setWork(0);
+    frames.setWork(0);
+    pthread_join(pid_audio_decode, 0);
+    pthread_join(pid_audio_play, 0);
+    if (swrContext) {
+        swr_free(&swrContext);
+        swrContext = 0;
+    }
+    /**
+    * 7、释放
+    */
+    //7.1 设置播放器状态为停止状态
+    if (bqPlayerPlay) {
+        (*bqPlayerPlay)->SetPlayState(bqPlayerPlay, SL_PLAYSTATE_STOPPED);
+    }
+    //7.2 销毁播放器
+    if (bqPlayerObject) {
+        (*bqPlayerObject)->Destroy(bqPlayerObject);
+        bqPlayerObject = 0;
+        bqPlayerBufferQueue = 0;
+    }
+    //7.3 销毁混音器
+    if (outputMixObject) {
+        (*outputMixObject)->Destroy(outputMixObject);
+        outputMixObject = 0;
+    }
+    //7.4 销毁引擎
+    if (engineObject) {
+        (*engineObject)->Destroy(engineObject);
+        engineObject = 0;
+        engineInterface = 0;
+    }
 }
