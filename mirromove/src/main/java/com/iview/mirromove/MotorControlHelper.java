@@ -20,11 +20,17 @@ public class MotorControlHelper {
     public static final int HMotor = 1;
     public static final int VMotor = 2;
 
-    public static final int HMotorLeftDirection = 1;
-    public static final int HMotorRightDirection = 0;
-
+//    public static final int HMotorLeftDirection = 1;
+//    public static final int HMotorRightDirection = 0;
+//
     public static final int VMotorUpDirection = 0;
     public static final int VMotorDownDirection = 1;
+
+    public static final int HMotorLeftDirection = 0;
+    public static final int HMotorRightDirection = 1;
+
+//    public static final int VMotorUpDirection = 1;
+//    public static final int VMotorDownDirection = 0;
 
     public final static int MSG_CONTROL_H_MOTOR = 0;
     public final static int MSG_CONTROL_D_MOTOR = 1;
@@ -147,11 +153,15 @@ public class MotorControlHelper {
             Log.e(TAG, "hStep and vStep can't be 0");
         }
 
+        bMotorRunning = true;
+
         if (hSteps == 0) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     MotorControl.controlMotor(VMotor, vSteps, vDir, delay);
+
+                    bMotorRunning = false;
 
                     if (motorCallBack != null) {
                         motorCallBack.onExecute();
@@ -164,6 +174,8 @@ public class MotorControlHelper {
                 public void run() {
                     MotorControl.controlMotor(HMotor, hSteps, hDir, delay);
 
+                    bMotorRunning = false;
+
                     if (motorCallBack != null) {
                         motorCallBack.onExecute();
                     }
@@ -174,6 +186,8 @@ public class MotorControlHelper {
                 @Override
                 public void run() {
                     MotorControl.controlMultiMotors(hSteps, vSteps, hDir, vDir, delay);
+
+                    bMotorRunning = false;
 
                     if (motorCallBack != null) {
                         motorCallBack.onExecute();

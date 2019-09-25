@@ -7,7 +7,6 @@
 
 #include <queue>
 #include <pthread.h>
-#include "myqueue.h"
 
 using namespace std;
 
@@ -61,21 +60,17 @@ public:
         return ret;
     }
 
-    int front(T &value) {
-        int ret = 0;
-
+    /**
+* 设置队列的工作状态
+* @param work
+*/
+    void setWork(int work) {
+        //先锁起来
         pthread_mutex_lock(&mutex);
-        while (work && q.empty()) {
-            pthread_cond_wait(&cond, &mutex);   //FIXME: 会和clear造成死锁
-        }
-        if (!q.empty()) {
-            value = q.front();
-            ret = 1;
-        }
-
+        this->work = work;
+        pthread_cond_signal(&cond);
+        //解锁
         pthread_mutex_unlock(&mutex);
-
-        return ret;
     }
 
     int empty() {
@@ -92,7 +87,7 @@ public:
         unsigned int size = q.size();
         for (int i = 0; i < size; i++) {
             T value = q.front();
-         //   q.pop();
+            //   q.pop();
             if (releaseCallback) {
                 releaseCallback(&value);
             }
@@ -103,18 +98,6 @@ public:
         pthread_mutex_unlock(&mutex);
     }
 
-    /**
- * 设置队列的工作状态
- * @param work
- */
-    void setWork(int work) {
-        //先锁起来
-        pthread_mutex_lock(&mutex);
-        this->work = work;
-        pthread_cond_signal(&cond);
-        //解锁
-        pthread_mutex_unlock(&mutex);
-    }
 
     void setReleaseCallback(ReleaseCallback releaseCallback) {
         this->releaseCallback = releaseCallback;
@@ -131,7 +114,7 @@ public:
 
         pthread_mutex_lock(&mutex);
 
-   //     syncHandle(q);
+        syncHandle(q);
 
         pthread_mutex_unlock(&mutex);
     }
@@ -139,7 +122,6 @@ public:
 private:
     queue<T> q;
 
-  //  concurrent_queue<T> q;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 

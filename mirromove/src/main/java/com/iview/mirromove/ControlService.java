@@ -56,6 +56,9 @@ public class ControlService extends Service {
     private final static int BASE_VSTEP = 50;
     private final static int BASE_DELAY = 200;
 
+    int receiveCount = 0;
+    int saveCount = 0;
+
     private MessageReceiver mMessageReceiver;
 
     private List<PathPlanning> pathPlanningList = new ArrayList<>();
@@ -125,20 +128,23 @@ public class ControlService extends Service {
 
                         cmdIndex = 0;
                         HandlePathPlanningStart();
+
+                        receiveCount = 0;
+                        saveCount = 0;
                         break;
                     case MSG_CONTROL_MOVE:
                     case MSG_PATH_PLAN_MOVE:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_MOVE");
                         while (MotorControlHelper.getInstance(ControlService.this).getMotorRunning()) {
-
                         }
+
+                        saveCount++;
 
                         String message = msg.getData().getString("message");
-//                        HandlePathPlanningMove(message);
-                        if (MotorControlHelper.getInstance(ControlService.this).getMotorRunning() == false) {
-  //                          String message = msg.getData().getString("message");
-                            HandlePathPlanningMove(message);
-                        }
+                        HandlePathPlanningMove(message);
+//                        if (MotorControlHelper.getInstance(ControlService.this).getMotorRunning() == false) {
+//                            HandlePathPlanningMove(message);
+//                        }
                         break;
                     case MSG_PATH_PLAN_SHOW:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_SHOW");
@@ -167,8 +173,10 @@ public class ControlService extends Service {
                             playCallBack.stop();
                         }
 
-                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 100000, MotorControlHelper.HMotorLeftDirection, 200);
-                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 100000, MotorControlHelper.VMotorUpDirection, 1000);
+                        Log.e(TAG, "receiveCount:" + receiveCount + ", saveCount:" + saveCount + ", ListSize:" + pathPlanningList.size());
+
+                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 200);
+                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 1000);
 
                         mHandler.sendEmptyMessage(MSG_PATH_PLAN_EXECUTE);
 
@@ -180,7 +188,7 @@ public class ControlService extends Service {
                         break;
                     case MSG_PATH_PLAN_EXECUTE:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_EXECUTE");
-                        if (bPathPlanning == true) {
+                        if (bPathPlanRunning == true) {
                             if (cmdIndex < pathPlanningList.size()) {
                                 String action = pathPlanningList.get(cmdIndex).getAction();
 
@@ -305,6 +313,8 @@ public class ControlService extends Service {
                         bundle.putString("message" , messge);
                         moveMessage.setData(bundle);
 
+                        receiveCount++;
+
                         mHandler.sendMessage(moveMessage);
                     } else if (action.equals(MsgType.ACTION_SHOW)) {
                         Message showMessage = new Message();
@@ -374,12 +384,12 @@ public class ControlService extends Service {
 
         if (bPathPlanRunning == true) {
             bPathPlanRunning = false;
-
-            pathPlanningList.clear();
         }
 
-        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.HMotor, 100000, MotorControlHelper.HMotorLeftDirection, 200);
-        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.VMotor, 100000, MotorControlHelper.VMotorUpDirection, 1000);
+        pathPlanningList.clear();
+
+        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 200);
+        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 1000);
 
         bMotorReset = false;
     }
@@ -395,6 +405,7 @@ public class ControlService extends Service {
         if (type.equals(MsgType.TYPE_PATH_PLANNING)) {
             PathPlanning pathPlanning = new PathPlanning("Move", angle, 0, null, 0);
             pathPlanningList.add(pathPlanning);
+            Log.e(TAG, "add pathPlanningList :" + "lissize:" + pathPlanningList.size() + ", saveCount:" + saveCount);
         }
 
     }
