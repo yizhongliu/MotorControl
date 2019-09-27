@@ -21,7 +21,7 @@ extern "C" {
 class NEFFmpeg {
     friend void *task_stop(void *args);
 public:
-    NEFFmpeg(JavaCallHelper *javaCallHelper, char *dataSource);
+    NEFFmpeg(JavaCallHelper *javaCallHelper, char *dataSource, int rotate=0);
 
     ~NEFFmpeg();
 
@@ -50,6 +50,9 @@ private:
     RenderCallback renderCallback;
     int duration;
     pthread_mutex_t seekMutex;
+
+    //视频播放旋转角度
+    int rotate = 0;
 public:
     void setDuration(int duration);
 

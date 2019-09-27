@@ -57,14 +57,14 @@ void renderFrame(uint8_t *src_data, int src_lineSize, int width, int height) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_pri_tool_nativeplayer_NativePlayer_prepareNative(JNIEnv *env, jobject instance, jstring dataSource_) {
+Java_pri_tool_nativeplayer_NativePlayer_prepareNative(JNIEnv *env, jobject instance, jstring dataSource_, jint rotate) {
     const char *dataSource = env->GetStringUTFChars(dataSource_, 0);
 
     LOGE("prepareNative");
 
  //   javaCallHelper = new JavaCallHelper(javaVM, env, instance);
     LOGE("new javaCallHelper");
-    ffmpeg = new NEFFmpeg(javaCallHelper, const_cast<char *>(dataSource));
+    ffmpeg = new NEFFmpeg(javaCallHelper, const_cast<char *>(dataSource), rotate);
     ffmpeg->setRenderCallback(renderFrame);
     ffmpeg->prepare();
 

@@ -51,9 +51,17 @@ find_library( # Sets the name of the path variable.
 target_link_libraries( # Specifies the target library.
         native-lib
 
-        -Wl,--start-group
-        avcodec avfilter avformat avutil swresample swscale
-        -Wl,--end-group
+        #-Wl,--start-group
+        #avcodec avfilter avformat avutil swresample swscale
+        #-Wl,--end-group
+        avcodec-58
+        avdevice-58
+        avfilter-7
+        avformat-58
+        postproc-55
+        swresample-3
+        swscale-5
+        avutil-56
 
         z
         android

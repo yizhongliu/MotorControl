@@ -46,6 +46,8 @@ public class NativePlayer {
     private String dataSource;
     private SurfaceHolder surfaceHolder;
 
+    private int rotate;
+
     public NativePlayer() {
         initNative();
     }
@@ -54,12 +56,16 @@ public class NativePlayer {
         this.dataSource = dataSource;
     }
 
+    public void setRotate(int rotate) {
+        this.rotate = rotate;
+    }
+
     /**
      * 播放准备工作
      */
     public void prepare() {
         Log.e(TAG, "prepare");
-        prepareNative(dataSource);
+        prepareNative(dataSource, rotate);
     }
 
     /**
@@ -181,7 +187,7 @@ public class NativePlayer {
 
     private native void initNative();
 
-    private native void prepareNative(String dataSource);
+    private native void prepareNative(String dataSource, int rotate);
 
     private native void startNative();
     private native void stopNative();

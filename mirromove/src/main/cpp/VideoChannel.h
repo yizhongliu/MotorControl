@@ -21,7 +21,7 @@ typedef void (*RenderCallback)(uint8_t *, int, int, int);
 
 class VideoChannel : public BaseChannel {
 public:
-    VideoChannel(int id, AVCodecContext *codecContext, int fps, AVRational time_base,
+    VideoChannel(int id, AVCodecContext *codecContext, int fps, AVRational time_base, int rotate,
                  JavaCallHelper *javaCallHelper);
 
     ~VideoChannel();
@@ -51,6 +51,7 @@ private:
     AVFilterContext *buffersink_ctx = 0;
     AVFilterContext *buffersrc_ctx = 0;
     AVFilterGraph * filter_graph;
+    int rotate = 0;
 
 };
 

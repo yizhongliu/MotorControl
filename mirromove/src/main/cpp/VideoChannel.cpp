@@ -40,12 +40,14 @@ void dropAVFrame(queue<AVFrame *> &q) {
     }
 }
 
-VideoChannel::VideoChannel(int id, AVCodecContext *codecContext, int fps, AVRational time_base,
+VideoChannel::VideoChannel(int id, AVCodecContext *codecContext, int fps, AVRational time_base, int rotate,
                            JavaCallHelper *javaCallHelper)
         : BaseChannel(id, codecContext, time_base, javaCallHelper) {
     this->fps = fps;
     packets.setSyncHandle(dropAVPacket);
     frames.setSyncHandle(dropAVFrame);
+
+    this->rotate = rotate;
 }
 
 VideoChannel::~VideoChannel() {
@@ -72,7 +74,9 @@ void VideoChannel::start() {
     packets.setWork(1);
     frames.setWork(1);
 
-    init_filter("rotate=30");
+    char args[256];
+    snprintf(args, sizeof(args), "rotate=%d", rotate);
+    init_filter(args);
     //可以进行解码播放？
     //解码
     pthread_create(&pid_video_decode, 0, task_video_decode, this);
@@ -126,7 +130,7 @@ void VideoChannel::video_decode() {
 
         AVFrame *filter_frame = av_frame_alloc();
         /* push the decoded frame into the filtergraph */
-        if (av_buffersrc_add_frame(buffersrc_ctx, frame) < 0) {
+        if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0) {
             LOGE("Error while feeding the filtergraph");
             releaseAVFrame(&frame);
             releaseAVFrame(&filter_frame);
@@ -152,8 +156,10 @@ void VideoChannel::video_decode() {
 //            av_usleep(10 * 1000);
 //            continue;
 //        }
-        frames.push(filter_frame);
 
+//            frames.push(frame);
+
+        frames.push(filter_frame);
         releaseAVFrame(&frame);
     }//end while
     releaseAVPacket(&packet);
@@ -291,6 +297,9 @@ void VideoChannel::stop() {
     frames.setWork(0);
     pthread_join(pid_video_decode, 0);
     pthread_join(pid_video_play, 0);
+
+    avfilter_graph_free(&filter_graph);
+    filter_graph = 0;
 }
 
 int VideoChannel::init_filter(const char *filters_descr) {

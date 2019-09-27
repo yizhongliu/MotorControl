@@ -8,7 +8,7 @@
 #include "NEFFmpeg.h"
 
 
-NEFFmpeg::NEFFmpeg(JavaCallHelper *javaCallHelper, char *dataSource) {
+NEFFmpeg::NEFFmpeg(JavaCallHelper *javaCallHelper, char *dataSource, int rotate) {
     LOGE("enter: %s", __FUNCTION__);
     this->javaCallHelper = javaCallHelper;
 //    this->dataSource = dataSource;//?
@@ -23,6 +23,8 @@ NEFFmpeg::NEFFmpeg(JavaCallHelper *javaCallHelper, char *dataSource) {
     this->dataSource = new char[strlen(dataSource) + 1];
     strcpy(this->dataSource, dataSource);
     pthread_mutex_init(&seekMutex, 0);
+
+    this->rotate = rotate;
 }
 
 NEFFmpeg::~NEFFmpeg() {
@@ -185,7 +187,7 @@ void NEFFmpeg::_prepare() {
 //            int fps = fram_rate.num / fram_rate.den;
             int fps = av_q2d(fram_rate);
 
-            videoChannel = new VideoChannel(i, codecContext, fps, time_base, javaCallHelper);
+            videoChannel = new VideoChannel(i, codecContext, fps, time_base, rotate, javaCallHelper);
             videoChannel->setRenderCallback(renderCallback);
         }
     }//end for
