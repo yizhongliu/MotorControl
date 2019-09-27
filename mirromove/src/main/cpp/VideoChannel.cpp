@@ -3,6 +3,12 @@
 //
 #include "VideoChannel.h"
 
+extern "C" {
+#include <libavutil/opt.h>
+#include <libavfilter/buffersrc.h>
+#include <libavfilter/buffersink.h>
+}
+
 /**
  * 丢包（AVPacket）
  * @param q
@@ -65,6 +71,8 @@ void VideoChannel::start() {
     //设置队列状态为工作状态
     packets.setWork(1);
     frames.setWork(1);
+
+    init_filter("rotate=30");
     //可以进行解码播放？
     //解码
     pthread_create(&pid_video_decode, 0, task_video_decode, this);
@@ -104,6 +112,8 @@ void VideoChannel::video_decode() {
         }
         releaseAVPacket(&packet);//释放packet，后面不需要了
         AVFrame *frame = av_frame_alloc();
+
+
         ret = avcodec_receive_frame(codecContext, frame);
         if (ret == AVERROR(EAGAIN)) {
             releaseAVFrame(&frame);
@@ -113,6 +123,25 @@ void VideoChannel::video_decode() {
             releaseAVFrame(&frame);
             break;
         }
+
+        AVFrame *filter_frame = av_frame_alloc();
+        /* push the decoded frame into the filtergraph */
+        if (av_buffersrc_add_frame(buffersrc_ctx, frame) < 0) {
+            LOGE("Error while feeding the filtergraph");
+            releaseAVFrame(&frame);
+            releaseAVFrame(&filter_frame);
+            break;
+        }
+
+        ret = av_buffersink_get_frame(buffersink_ctx, filter_frame);
+        if (ret < 0) {
+            LOGE("Error while get frame frame the filtergraph");
+            releaseAVFrame(&frame);
+            releaseAVFrame(&filter_frame);
+            break;
+        }
+
+
         //ret == 0 数据收发正常,成功获取到了解码后的视频原始数据包 AVFrame ，格式是 yuv
         //对frame进行处理（渲染播放）直接写？
         /**
@@ -123,7 +152,9 @@ void VideoChannel::video_decode() {
 //            av_usleep(10 * 1000);
 //            continue;
 //        }
-        frames.push(frame);
+        frames.push(filter_frame);
+
+        releaseAVFrame(&frame);
     }//end while
     releaseAVPacket(&packet);
 
@@ -260,4 +291,90 @@ void VideoChannel::stop() {
     frames.setWork(0);
     pthread_join(pid_video_decode, 0);
     pthread_join(pid_video_play, 0);
+}
+
+int VideoChannel::init_filter(const char *filters_descr) {
+    char args[512];
+    int ret = 0;
+    const AVFilter *buffersrc = avfilter_get_by_name("buffer");
+    const AVFilter *buffersink = avfilter_get_by_name("buffersink");
+    AVFilterInOut *outputs = avfilter_inout_alloc();
+    AVFilterInOut *inputs = avfilter_inout_alloc();
+    AVRational time_base = BaseChannel::time_base;
+    enum AVPixelFormat pix_fmts[] = {codecContext->pix_fmt, AV_PIX_FMT_NONE};
+
+    filter_graph = avfilter_graph_alloc();
+    if (!outputs || ! inputs || !filter_graph) {
+        ret = AVERROR(ENOMEM);
+    }
+
+    /* buffer video source: the decoded frames from the decoder will be inserted here. */
+    snprintf(args, sizeof(args),
+             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
+             codecContext->width, codecContext->height, codecContext->pix_fmt,
+             time_base.num, time_base.den,
+             codecContext->sample_aspect_ratio.num, codecContext->sample_aspect_ratio.den);
+
+    ret = avfilter_graph_create_filter(&buffersrc_ctx, buffersrc, "in", args, NULL, filter_graph);
+    if (ret < 0) {
+        LOGE("Cannot create buffer src!!!");
+        goto end;
+    }
+
+    /* buffer video sink: to terminate the filter chain. */
+    ret = avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out",
+                                       NULL, NULL, filter_graph);
+    if (ret < 0) {
+        LOGE("Cannot create buffer sink");
+        goto end;
+    }
+
+    ret = av_opt_set_int_list(buffersink_ctx, "pix_fmts", pix_fmts,
+                              AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
+    if (ret < 0) {
+        LOGE( "Cannot set output pixel format");
+        goto end;
+    }
+
+    /*
+ * Set the endpoints for the filter graph. The filter_graph will
+ * be linked to the graph described by filters_descr.
+ */
+
+    /*
+     * The buffer source output must be connected to the input pad of
+     * the first filter described by filters_descr; since the first
+     * filter input label is not specified, it is set to "in" by
+     * default.
+     */
+    outputs->name       = av_strdup("in");
+    outputs->filter_ctx = buffersrc_ctx;
+    outputs->pad_idx    = 0;
+    outputs->next       = NULL;
+
+    /*
+     * The buffer sink input must be connected to the output pad of
+     * the last filter described by filters_descr; since the last
+     * filter output label is not specified, it is set to "out" by
+     * default.
+     */
+    inputs->name       = av_strdup("out");
+    inputs->filter_ctx = buffersink_ctx;
+    inputs->pad_idx    = 0;
+    inputs->next       = NULL;
+
+    if ((ret = avfilter_graph_parse_ptr(filter_graph, filters_descr,
+                                        &inputs, &outputs, NULL)) < 0)
+        goto end;
+
+    if ((ret = avfilter_graph_config(filter_graph, NULL)) < 0)
+        goto end;
+
+
+
+end:
+    avfilter_inout_free(&inputs);
+    avfilter_inout_free(&outputs);
+
+    return ret;
 }

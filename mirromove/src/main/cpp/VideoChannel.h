@@ -6,6 +6,7 @@
 #define NE_PLAYER_1_VIDEOCHANNEL_H
 
 
+
 #include "BaseChannel.h"
 #include "AudioChannel.h"
 #include "macro.h"
@@ -13,6 +14,7 @@
 extern "C" {
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
+#include <libavfilter/avfilter.h>
 };
 
 typedef void (*RenderCallback)(uint8_t *, int, int, int);
@@ -36,12 +38,19 @@ public:
 
     void setAudioChannel(AudioChannel *audioChannel);
 
+    int init_filter(const char* filters_descr);
+
 private:
     pthread_t pid_video_decode;
     pthread_t pid_video_play;
     RenderCallback renderCallback;
     int fps;
     AudioChannel *audioChannel = 0;
+
+
+    AVFilterContext *buffersink_ctx = 0;
+    AVFilterContext *buffersrc_ctx = 0;
+    AVFilterGraph * filter_graph;
 
 };
 
