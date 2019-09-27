@@ -6,8 +6,9 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-public class NativePlayer implements SurfaceHolder.Callback {
+public class NativePlayer {
 
+    private static final String TAG = "NEPlayer";
     static {
         System.loadLibrary("native-lib");
     }
@@ -45,6 +46,10 @@ public class NativePlayer implements SurfaceHolder.Callback {
     private String dataSource;
     private SurfaceHolder surfaceHolder;
 
+    public NativePlayer() {
+        initNative();
+    }
+
     public void setDataSource(String dataSource) {
         this.dataSource = dataSource;
     }
@@ -53,6 +58,7 @@ public class NativePlayer implements SurfaceHolder.Callback {
      * 播放准备工作
      */
     public void prepare() {
+        Log.e(TAG, "prepare");
         prepareNative(dataSource);
     }
 
@@ -89,6 +95,12 @@ public class NativePlayer implements SurfaceHolder.Callback {
         }
     }
 
+    public void onCompletion() {
+        if (null != onCompletionListener) {
+            onCompletionListener.OnCompletion();
+        }
+    }
+
     public void setOnpreparedListener(OnpreparedListener onpreparedListener) {
         this.onpreparedListener = onpreparedListener;
     }
@@ -100,52 +112,17 @@ public class NativePlayer implements SurfaceHolder.Callback {
         this.onProgressListener = onProgressListener;
     }
 
-    public void setSurfaceView(SurfaceView surfaceView) {
-        if (null != surfaceHolder) {
-            surfaceHolder.removeCallback(this);
-        }
-        surfaceHolder = surfaceView.getHolder();
-        surfaceHolder.addCallback(this);
+    public void setOnCompletionListener(OnCompletionListener onCompletionListener) {
+        this.onCompletionListener = onCompletionListener;
     }
 
-    /**
-     * 画布创建回调
-     *
-     * @param holder
-     */
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
 
-    }
-
-    /**
-     * 画布刷新
-     *
-     * @param holder
-     * @param format
-     * @param width
-     * @param height
-     */
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        setSurfaceNative(holder.getSurface());
-    }
-
-    /**
-     * 画布销毁
-     *
-     * @param holder
-     */
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-
-    }
 
     /**
      * 资源释放
      */
     public void release() {
- //       surfaceHolder.removeCallback(this);
+        //     surfaceHolder.removeCallback(this);
         releaseNative();
     }
 
@@ -164,10 +141,6 @@ public class NativePlayer implements SurfaceHolder.Callback {
         return getDurationNative();
     }
 
-    public void setSurface(Surface surface) {
-        setSurfaceNative(surface);
-    }
-
     /**
      * 播放进度跳转
      * @param playProgress
@@ -179,6 +152,10 @@ public class NativePlayer implements SurfaceHolder.Callback {
                 seekToNative(playProgress);
             }
         }.start();
+    }
+
+    public void setSurface(Surface surface) {
+        setSurfaceNative(surface);
     }
 
     public interface OnpreparedListener {
@@ -193,9 +170,16 @@ public class NativePlayer implements SurfaceHolder.Callback {
         void onProgress(int progress);
     }
 
+    public interface OnCompletionListener {
+        void OnCompletion();
+    }
+
     private OnErrorListener onErrorListener;
     private OnpreparedListener onpreparedListener;
     private OnProgressListener onProgressListener;
+    private OnCompletionListener onCompletionListener;
+
+    private native void initNative();
 
     private native void prepareNative(String dataSource);
 

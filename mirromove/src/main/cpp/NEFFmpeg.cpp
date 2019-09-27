@@ -9,6 +9,7 @@
 
 
 NEFFmpeg::NEFFmpeg(JavaCallHelper *javaCallHelper, char *dataSource) {
+    LOGE("enter: %s", __FUNCTION__);
     this->javaCallHelper = javaCallHelper;
 //    this->dataSource = dataSource;//?
     //这里的dataSource是从Java传过来的字符串，通过jni接口转成了c++字符串。
@@ -25,6 +26,7 @@ NEFFmpeg::NEFFmpeg(JavaCallHelper *javaCallHelper, char *dataSource) {
 }
 
 NEFFmpeg::~NEFFmpeg() {
+    LOGE("enter: %s", __FUNCTION__);
     DELETE(dataSource);
     DELETE(javaCallHelper);
 //    if (javaCallHelper){
@@ -40,6 +42,7 @@ NEFFmpeg::~NEFFmpeg() {
  * @return
  */
 void *task_prepare(void *args) {
+    LOGE("enter: %s", __FUNCTION__);
     //打开输入
     NEFFmpeg *ffmpeg = static_cast<NEFFmpeg *>(args);
     //2 dataSource
@@ -48,6 +51,7 @@ void *task_prepare(void *args) {
 }
 
 void *task_start(void *args) {
+    LOGE("enter: %s", __FUNCTION__);
     NEFFmpeg *ffmpeg = static_cast<NEFFmpeg *>(args);
     ffmpeg->_start();
     return 0;//一定一定一定要返回0！！！
@@ -55,29 +59,40 @@ void *task_start(void *args) {
 
 //设置为友元函数
 void *task_stop(void *args) {
+    LOGE("enter: %s", __FUNCTION__);
     NEFFmpeg *ffmpeg = static_cast<NEFFmpeg *>(args);
     //要保证_prepare方法（子线程中）执行完再释放（在主线程）
     //pthread_join ：这里调用了后会阻塞主，可能引发ANR
     ffmpeg->isPlaying = 0;
+
+    LOGE("before pid_prepare %s", __FUNCTION__);
     pthread_join(ffmpeg->pid_prepare, 0);//解决了：要保证_prepare方法（子线程中）执行完再释放（在主线程）的问题
 //    //2 dataSource
 //    ffmpeg->_prepare();
 
+    LOGE("before pid_prepare %s", __FUNCTION__);
     pthread_join(ffmpeg->pid_start, 0);
+
+  //  av_usleep(100000);
+
+    DELETE(ffmpeg->videoChannel);
+    DELETE(ffmpeg->audioChannel);
 
     if (ffmpeg->formatContext) {
         avformat_close_input(&ffmpeg->formatContext);
         avformat_free_context(ffmpeg->formatContext);
         ffmpeg->formatContext = 0;
     }
-    DELETE(ffmpeg->videoChannel);
-    DELETE(ffmpeg->audioChannel);
+
 
     DELETE(ffmpeg);
+    LOGE("leave : %s", __FUNCTION__);
     return 0;//一定一定一定要返回0！！！
 }
 
 void NEFFmpeg::_prepare() {
+    LOGE("enter: %s", __FUNCTION__);
+    LOGE("NEFFmpeg::_prepare");
 
     //0.5 AVFormatContext **ps
     formatContext = avformat_alloc_context();
@@ -198,6 +213,7 @@ void NEFFmpeg::_prepare() {
  * doc/samples/
  */
 void NEFFmpeg::prepare() {
+    LOGE("enter: %s", __FUNCTION__);
     //可以直接来进行解码api调用吗？
     //xxxxxx。。。。不能！
     //文件：io流问题
@@ -212,6 +228,7 @@ void NEFFmpeg::prepare() {
  * 开始播放
  */
 void NEFFmpeg::start() {
+    LOGE("enter: %s", __FUNCTION__);
     isPlaying = 1;
     if (videoChannel) {
         videoChannel->setAudioChannel(audioChannel);
@@ -227,6 +244,9 @@ void NEFFmpeg::start() {
  * 真正执行解码播放
  */
 void NEFFmpeg::_start() {
+    LOGE("enter: %s", __FUNCTION__);
+
+    bool bComplete = false;
     while (isPlaying) {
         /**
          * 内存泄漏点1
@@ -259,13 +279,33 @@ void NEFFmpeg::_start() {
             //表示读完了
             //要考虑读完了，是否播完了的情况
             //如何判断有没有播放完？判断队列是否为空
-            if (videoChannel->packets.empty() && videoChannel->frames.empty()
-                && audioChannel->packets.empty() && audioChannel->frames.empty()
-                    ) {
-                //播放完了
-                av_packet_free(&packet);
-                break;
+            if (videoChannel && audioChannel) {
+                if (videoChannel->packets.empty() && videoChannel->frames.empty()
+                    && audioChannel->packets.empty() && audioChannel->frames.empty()
+                        ) {
+                    //播放完了
+                    av_packet_free(&packet);
+                    bComplete = true;
+                    break;
+                }
+            } else if (videoChannel) {
+                if (videoChannel->packets.empty() && videoChannel->frames.empty()) {
+                    //播放完了
+                    av_packet_free(&packet);
+                    bComplete = true;
+                    break;
+                }
+            } else if (audioChannel) {
+                if (audioChannel->packets.empty() && audioChannel->frames.empty()) {
+                    //播放完了
+                    av_packet_free(&packet);
+                    bComplete = true;
+                    break;
+                }
             }
+
+            av_packet_free(&packet);
+
 
         } else {
             //TODO 作业:反射通知java
@@ -280,8 +320,20 @@ void NEFFmpeg::_start() {
 
     isPlaying = 0;
     //停止解码播放（音频和视频）
-    videoChannel->stop();
-    audioChannel->stop();
+    if (videoChannel) {
+        videoChannel->stop();
+    }
+
+    if (audioChannel) {
+        audioChannel->stop();
+    }
+
+    if (bComplete) {
+        if (javaCallHelper) {
+            javaCallHelper->onCompletion(THREAD_CHILD);
+        }
+    }
+
 
 //    AVPacket *avPacket = av_packet_alloc();
 //    AVFrame *avFrame = av_frame_alloc();
@@ -295,10 +347,11 @@ void NEFFmpeg::_start() {
 //    av_frame_free(&avFrame);
 //    函数指针？
 
-
+    LOGE("leave : %s", __FUNCTION__);
 }
 
 void NEFFmpeg::setRenderCallback(RenderCallback renderCallback) {
+    LOGE("enter: %s", __FUNCTION__);
     this->renderCallback = renderCallback;
 }
 
@@ -306,12 +359,36 @@ void NEFFmpeg::setRenderCallback(RenderCallback renderCallback) {
  * 停止播放
  */
 void NEFFmpeg::stop() {
+    LOGE("enter: %s", __FUNCTION__);
 //    isPlaying = 0;
+    LOGE("After delete javaCall");
     javaCallHelper = 0;//prepare阻塞中停止了，还是会回调给java "准备好了"
 
 
     //既然在主线程会引发ANR，那么我们到子线程中去释放
-    pthread_create(&pid_stop, 0, task_stop, this);//创建stop子线程
+//    pthread_create(&pid_stop, 0, task_stop, this);//创建stop子线程
+
+    isPlaying = 0;
+
+    LOGE("before pid_prepare %s", __FUNCTION__);
+    pthread_join(pid_prepare, 0);//解决了：要保证_prepare方法（子线程中）执行完再释放（在主线程）的问题
+//    //2 dataSource
+//    ffmpeg->_prepare();
+
+    LOGE("before pid_prepare %s", __FUNCTION__);
+    pthread_join(pid_start, 0);
+
+    //  av_usleep(100000);
+
+    DELETE(videoChannel);
+    DELETE(audioChannel);
+
+    if (formatContext) {
+        avformat_close_input(&formatContext);
+        avformat_free_context(formatContext);
+        formatContext = 0;
+    }
+
 
 
 //    if (formatContext) {
@@ -329,10 +406,12 @@ void NEFFmpeg::stop() {
 
 
 int NEFFmpeg::getDuration() const {
+ //   LOGE("enter: %s", __FUNCTION__);
     return duration;
 }
 
 void NEFFmpeg::seekTo(int playProgress) {
+    LOGE("enter: %s", __FUNCTION__);
 
     if (playProgress < 0 || playProgress > duration) {
         return;

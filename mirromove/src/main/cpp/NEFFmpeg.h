@@ -41,7 +41,7 @@ private:
     JavaCallHelper *javaCallHelper = 0;
     AudioChannel *audioChannel = 0;
     VideoChannel *videoChannel = 0;
-    char *dataSource;
+    char *dataSource = 0;
     pthread_t pid_prepare;
     pthread_t pid_start;
     pthread_t pid_stop;

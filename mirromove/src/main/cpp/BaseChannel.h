@@ -27,6 +27,7 @@ public:
     }
 
     virtual ~BaseChannel() {
+        LOGE("enter: %s  framesize: %d", __FUNCTION__, frames.size());
         packets.clear();
         frames.clear();
         if (codecContext) {
@@ -52,11 +53,14 @@ public:
      * @param frame
      */
     static void releaseAVFrame(AVFrame **frame) {
+   //     LOGE("releaveAvframe");
         if (frame) {
+
             av_frame_free(frame);
             *frame = 0;
         }
     }
+
 
     //纯虚函数（抽象方法）
     virtual void start() = 0;

@@ -29,9 +29,7 @@ add_library( # Sets the name of the library.
         ${src_files}
         ./net/NetTimeProvider.cpp
         ./net/NetTimeClient.cpp
-        ./net/PlayClockTime.cpp
-        ./libleaktracer/src/AllocationHandlers.cpp
-        ./libleaktracer/src/MemoryTrace.cpp)
+        ./net/PlayClockTime.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
@@ -53,14 +51,10 @@ find_library( # Sets the name of the path variable.
 target_link_libraries( # Specifies the target library.
         native-lib
 
-        avcodec-58
-        avdevice-58
-        avfilter-7
-        avformat-58
-        postproc-55
-        swresample-3
-        swscale-5
-        avutil-56
+        -Wl,--start-group
+        avcodec avfilter avformat avutil swresample swscale
+        -Wl,--end-group
+
         z
         android
         OpenSLES

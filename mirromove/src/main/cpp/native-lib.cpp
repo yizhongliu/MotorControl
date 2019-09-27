@@ -60,7 +60,10 @@ JNIEXPORT void JNICALL
 Java_pri_tool_nativeplayer_NativePlayer_prepareNative(JNIEnv *env, jobject instance, jstring dataSource_) {
     const char *dataSource = env->GetStringUTFChars(dataSource_, 0);
 
-    javaCallHelper = new JavaCallHelper(javaVM, env, instance);
+    LOGE("prepareNative");
+
+ //   javaCallHelper = new JavaCallHelper(javaVM, env, instance);
+    LOGE("new javaCallHelper");
     ffmpeg = new NEFFmpeg(javaCallHelper, const_cast<char *>(dataSource));
     ffmpeg->setRenderCallback(renderFrame);
     ffmpeg->prepare();
@@ -110,6 +113,8 @@ Java_pri_tool_nativeplayer_NativePlayer_stopNative(JNIEnv *env, jobject thiz) {
     if (ffmpeg) {
         ffmpeg->stop();
     }
+
+    DELETE(ffmpeg);
 }
 extern "C"
 JNIEXPORT jint JNICALL
@@ -126,4 +131,10 @@ Java_pri_tool_nativeplayer_NativePlayer_seekToNative(JNIEnv *env, jobject thiz, 
     if (ffmpeg) {
         ffmpeg->seekTo(playProgress);
     }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_pri_tool_nativeplayer_NativePlayer_initNative(JNIEnv *env, jobject thiz) {
+    javaCallHelper = new JavaCallHelper(javaVM, env, thiz);
 }

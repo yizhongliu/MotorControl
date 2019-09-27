@@ -77,9 +77,16 @@ void VideoChannel::start() {
  * 真正视频解码
  */
 void VideoChannel::video_decode() {
+    LOGE("enter : %s", __FUNCTION__);
     AVPacket *packet = 0;
+    int ret;
     while (isPlaying) {
-        int ret = packets.pop(packet);
+
+        if (frames.size() > 100) {
+            continue;
+        }
+
+        ret = packets.pop(packet);
         if (!isPlaying) {
             //如果停止播放了，跳出循环 释放packet
             break;
@@ -99,9 +106,11 @@ void VideoChannel::video_decode() {
         AVFrame *frame = av_frame_alloc();
         ret = avcodec_receive_frame(codecContext, frame);
         if (ret == AVERROR(EAGAIN)) {
+            releaseAVFrame(&frame);
             //重来
             continue;
         } else if (ret != 0) {
+            releaseAVFrame(&frame);
             break;
         }
         //ret == 0 数据收发正常,成功获取到了解码后的视频原始数据包 AVFrame ，格式是 yuv
@@ -110,16 +119,19 @@ void VideoChannel::video_decode() {
          * 内存泄漏点2
          * 控制 frames 队列
          */
-        while (isPlaying && frames.size() > 100) {
-            av_usleep(10 * 1000);
-            continue;
-        }
+//        while (isPlaying && frames.size() > 100) {
+//            av_usleep(10 * 1000);
+//            continue;
+//        }
         frames.push(frame);
     }//end while
     releaseAVPacket(&packet);
+
+    LOGE("leave : %s", __FUNCTION__);
 }
 
 void VideoChannel::video_play() {
+    LOGE("enter : %s", __FUNCTION__);
     AVFrame *frame = 0;
     //要注意对原始数据进行格式转换：yuv > rgba
     // yuv: 400x800 > rgba: 400x800
@@ -137,8 +149,14 @@ void VideoChannel::video_play() {
 
     //单位是 : 秒
     double delay_time_per_frame = 1.0 / fps;
+    int ret;
+
+    double extra_delay;
+    double real_delay;
+    double video_time;
+
     while (isPlaying) {
-        int ret = frames.pop(frame);
+        ret = frames.pop(frame);
         if (!isPlaying) {
             //如果停止播放了，跳出循环 释放packet
             break;
@@ -154,14 +172,16 @@ void VideoChannel::video_play() {
         //每一帧还有自己的额外延时时间
 
         //extra_delay = repeat_pict / (2*fps)
-        double extra_delay = frame->repeat_pict / (2 * fps);
-        double real_delay = delay_time_per_frame + extra_delay;
+        extra_delay = frame->repeat_pict / (2 * fps);
+        real_delay = delay_time_per_frame + extra_delay;
         //单位是：微秒
 //        av_usleep(real_delay * 1000000);//直接以视频播放规则来播放
 
         //不能了，需要根据音频的播放时间来判断
         //获取视频的播放时间
-        double video_time = frame->best_effort_timestamp * av_q2d(time_base);
+        video_time = frame->best_effort_timestamp * av_q2d(time_base);
+
+ //       av_usleep((real_delay * 3) * 1000000);
 
         //音视频同步：永远都是你追我赶的状态
         if (!audioChannel) {
@@ -175,7 +195,7 @@ void VideoChannel::video_play() {
             //获取音视频播放的时间差
             double time_diff = video_time - audioTime;
             if (time_diff > 0) {
-                LOGE("视频比音频快：%lf", time_diff);
+      //          LOGE("视频比音频快：%lf", time_diff);
                 //视频比音频快：等音频（sleep）
                 //自然播放状态下，time_diff的值不会很大
                 //但是，seek后time_diff的值可能会很大，导致视频休眠太久
@@ -189,20 +209,23 @@ void VideoChannel::video_play() {
                     av_usleep((real_delay + time_diff) * 1000000);
                 }
             } else if (time_diff < 0) {
-                LOGE("音频比视频快: %lf", fabs(time_diff));
+       //         LOGE("音频比视频快: %lf", fabs(time_diff));
                 //音频比视频快：追音频（尝试丢视频包）
                 //视频包：packets 和 frames
                 if (fabs(time_diff) >= 0.05) {
                     //时间差如果大于0.05，有明显的延迟感
                     //丢包：要操作队列中数据！一定要小心！
 //                    packets.sync();
-                    frames.sync();
+                //    frames.sync();
+                    releaseAVFrame(&frame);
                     continue;
                 }
             } else {
                 LOGE("音视频完美同步！");
             }
         }
+
+
 
         //dst_data: AV_PIX_FMT_RGBA格式的数据
         //渲染，回调出去> native-lib里
@@ -218,6 +241,8 @@ void VideoChannel::video_play() {
     av_freep(&dst_data[0]);
     sws_freeContext(sws_ctx);
     //MediaCodec
+
+    LOGE("leave : %s", __FUNCTION__);
 }
 
 void VideoChannel::setRenderCallback(RenderCallback callback) {

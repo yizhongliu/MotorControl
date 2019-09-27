@@ -55,6 +55,7 @@ public class MainActivity extends Activity {
     private final static String TAG = "MainActivity";
 
     private final static int MSG_IMAGE_DISMISS = 0;
+    private final static int MSG_VIDEO_COMPLETE = 1;
 
     private NetWorkService netWorkService;
     private SocketService socketService;
@@ -186,6 +187,14 @@ public class MainActivity extends Activity {
             @Override
             public void onError(int errorCode) {
 
+            }
+        });
+
+        mPlayer.setOnCompletionListener(new NativePlayer.OnCompletionListener() {
+            @Override
+            public void OnCompletion() {
+                Log.e(TAG, "onCompletion");
+                mBackHandler.sendEmptyMessage(MSG_VIDEO_COMPLETE);
             }
         });
 
@@ -410,7 +419,7 @@ public class MainActivity extends Activity {
             Log.d(TAG, "surfaceDestroyed Called");
             bVideoShow = false;
 
-            mVideoSurface = null;
+//            mVideoSurface = null;
 //            if (mPlayer != null) {
 //                mPlayer.setSurface(mVideoSurface);
 //            }
@@ -433,31 +442,31 @@ public class MainActivity extends Activity {
                     if (MediaFileUtil.isImageFileType(url)) {
                         imageUrl =  Environment.getExternalStorageDirectory() + "/" + url;
                         if (bVideoShow) {
+                            Log.e(TAG, "stop player");
                             if (mPlayer != null) {
                                 mPlayer.stop();
-//                                mPlayer.release();
-//                                Log.e(TAG, "stop mPlayer");
-//                                surfaceView.setVisibility(View.INVISIBLE);
+                      //          mPlayer.release();
+                                Log.e(TAG, "stop mPlayer");
+                                surfaceView.setVisibility(View.INVISIBLE);
                                 bVideoShow = false;
                             }
                         }
 
                         bImageShow = true;
-                        //   String path = Environment.getExternalStorageDirectory() + "/Pictures/test11.jpg";
 
-//                        Bitmap bitmap = BitmapFactory.decodeFile(imageUrl);
-//
-//                 //       matrix.setRotate(rotation);
-//                 //       bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),bitmap.getHeight(), matrix, true);
-//
-//                        imagePriView.setVisibility(View.VISIBLE);
-//
-//                        imagePriView.setImageBitmap(bitmap);
-//                        imagePriView.setRotation(rotation);
-//
-//                        if (time != -1) {
-//                            mBackHandler.sendEmptyMessageDelayed(MSG_IMAGE_DISMISS, time);
-//                        }
+                        Bitmap bitmap = BitmapFactory.decodeFile(imageUrl);
+
+                 //       matrix.setRotate(rotation);
+                 //       bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),bitmap.getHeight(), matrix, true);
+
+                        imagePriView.setVisibility(View.VISIBLE);
+
+                        imagePriView.setImageBitmap(bitmap);
+                        imagePriView.setRotation(rotation);
+
+                        if (time != -1) {
+                            mBackHandler.sendEmptyMessageDelayed(MSG_IMAGE_DISMISS, time);
+                        }
                     } else if (MediaFileUtil.isVideoFileType(url)) {
                         String absUrl =  Environment.getExternalStorageDirectory() + "/" + url;
                         //先隐藏图片显示
@@ -469,13 +478,13 @@ public class MainActivity extends Activity {
                         if (bVideoShow) {
                             if (mPlayer != null) {
                                 mPlayer.stop();
-                                mPlayer.release();
+                   //             mPlayer.release();
                             }
                         }
 
                         // dataSource = Environment.getExternalStorageDirectory() + "/Billons.mp4";
                     //    startPlay(absUrl, "video_hwaccel=0;video_rotate=30");
-
+                        Log.e(TAG, "start player");
                         mPlayer.setDataSource(absUrl);
             //            mPlayer.setRotate(rotation);
 
@@ -521,7 +530,7 @@ public class MainActivity extends Activity {
             if (bVideoShow) {
                 if (mPlayer != null) {
                     mPlayer.stop();
-                    mPlayer.release();
+              //      mPlayer.release();
 //                                Log.e(TAG, "stop mPlayer");
                     runOnUiThread(new Runnable() {
                         @Override
@@ -560,6 +569,10 @@ public class MainActivity extends Activity {
                             Log.e(TAG, "MSG_IMAGE_DISMISS");
                             controlService.onShowComplete();
                         }
+                        break;
+                    case MSG_VIDEO_COMPLETE:
+                        mPlayer.stop();
+                        controlService.onShowComplete();
                         break;
                 }
             }
