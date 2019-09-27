@@ -19,12 +19,12 @@ extern "C"{
 extern "C" JNIEXPORT jint
 Java_com_iview_stepmotor_MotorControl_nativeControlMotor(
         JNIEnv *env,
-        jobject /* this */,jint motorId, jint steps, jint dir, jint delay) {
+        jobject /* this */,jint motorId, jint steps, jint dir, jint delay, jboolean bCheckLimitSwitch) {
     LOGD("nativeControlMotor");
     if (motorId == H_MOTOR_ID) {
-        return controlHorizontalMotor(steps, dir, delay);
+        return controlHorizontalMotor(steps, dir, delay, bCheckLimitSwitch);
     } else if (motorId == V_MOTOR_ID) {
-        return controlVerticalMotor(steps, dir, delay);
+        return controlVerticalMotor(steps, dir, delay, bCheckLimitSwitch);
     }
 }
 
@@ -55,12 +55,12 @@ Java_com_iview_stepmotor_MotorControl_nativeSetMotorDirection(
 extern "C" JNIEXPORT jint
 Java_com_iview_stepmotor_MotorControl_nativeStartMotorRunning(
         JNIEnv *env,
-        jobject /* this */,jint motorId) {
+        jobject /* this */,jint motorId, jboolean bCheckLimitSwitch) {
     LOGD("nativeStartMotorRunning");
     if (motorId == H_MOTOR_ID) {
-        return startHMotorRunning();
+        return startHMotorRunning(bCheckLimitSwitch);
     } else if (motorId == V_MOTOR_ID) {
-        return startVMotorRunning();
+        return startVMotorRunning(bCheckLimitSwitch);
     }
 }
 
@@ -91,13 +91,13 @@ Java_com_iview_stepmotor_MotorControl_nativeGetMotorEnable(
 extern "C" JNIEXPORT void
 Java_com_iview_stepmotor_MotorControl_nativeControlMultiMotors(
         JNIEnv *env,
-        jobject /* this */,jint hSteps, jint vSteps, jint hDir, jint vDir, jint delay) {
+        jobject /* this */,jint hSteps, jint vSteps, jint hDir, jint vDir, jint delay, jboolean bCheckLimitSwitch) {
     LOGD("nativeControlMotor %d, %d, %d", hSteps, vSteps, delay);
     if (hSteps == 0 || vSteps == 0) {
         return;
     }
 
-    controlMultipleMotors(hSteps, vSteps, hDir, vDir, delay);
+    controlMultipleMotors(hSteps, vSteps, hDir, vDir, delay, bCheckLimitSwitch);
 }
 
 extern "C" JNIEXPORT void

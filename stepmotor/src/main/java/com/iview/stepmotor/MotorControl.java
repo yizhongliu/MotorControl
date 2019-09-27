@@ -15,7 +15,11 @@ public class MotorControl {
     public static final int VMotorDownDirection = 0;
 
     public static int controlMotor(int motorId, int steps, int dir, int delay) {
-        return nativeControlMotor(motorId, steps, dir, delay);
+        return controlMotor(motorId, steps, dir, delay, true);
+    }
+
+    public static int controlMotor(int motorId, int steps, int dir, int delay, boolean bCheckLimitSwitch) {
+        return nativeControlMotor(motorId, steps, dir, delay, bCheckLimitSwitch);
     }
 
     public static int setMotorSpeed(int motorId, int delay) {
@@ -27,7 +31,11 @@ public class MotorControl {
     }
 
     public static int startMotorRunning(int motorId) {
-        return nativeStartMotorRunning(motorId);
+        return startMotorRunning(motorId, true);
+    }
+
+    public static int startMotorRunning(int motorId, boolean bCheckLimitSwitch) {
+        return nativeStartMotorRunning(motorId, bCheckLimitSwitch);
     }
 
     public static int stopMotorRunning(int motorId) {
@@ -43,23 +51,27 @@ public class MotorControl {
     }
 
     public static void controlMultiMotors(int hSteps, int vSteps, int hDir, int vDir, int delay) {
-        nativeControlMultiMotors(hSteps, vSteps, hDir, vDir, delay);
+        controlMultiMotors(hSteps, vSteps, hDir, vDir, delay, true);
+    }
+
+    public static void controlMultiMotors(int hSteps, int vSteps, int hDir, int vDir, int delay, boolean bCheckLimitSwitch) {
+        nativeControlMultiMotors(hSteps, vSteps, hDir, vDir, delay, bCheckLimitSwitch);
     }
 
     public static void stopMultiMotors() {
         nativeStopMultiMotors();
     }
 
-    private native static int nativeControlMotor(int motorId, int steps, int dir, int delay);
+    private native static int nativeControlMotor(int motorId, int steps, int dir, int delay, boolean bCheckLimitSwitch);
     private native static int nativeSetMotorSpeed(int motorId, int delay);
     private native static int nativeSetMotorDirection(int motorId, int direction);
-    private native static int nativeStartMotorRunning(int motorId);
+    private native static int nativeStartMotorRunning(int motorId, boolean bCheckLimitSwitch);
     private native static int nativeStopMotorRunning(int motorId);
     private native static boolean nativeGetMotorEnable(int motorId);
 
     private native static void nativeSwitchProjector(int enable);
 
-    private native static void nativeControlMultiMotors(int hSteps, int vSteps, int hDir, int vDir, int delay);
+    private native static void nativeControlMultiMotors(int hSteps, int vSteps, int hDir, int vDir, int delay, boolean bCheckLimitSwitch);
     private native static void nativeStopMultiMotors();
 
 }

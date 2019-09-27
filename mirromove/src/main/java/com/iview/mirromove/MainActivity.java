@@ -486,7 +486,7 @@ public class MainActivity extends Activity {
                     //    startPlay(absUrl, "video_hwaccel=0;video_rotate=30");
                         Log.e(TAG, "start player");
                         mPlayer.setDataSource(absUrl);
-            //            mPlayer.setRotate(rotation);
+                        mPlayer.setRotate(rotation);
 
                         if (bVideoShow) {
                             mPlayer.setSurface(mVideoSurface);

@@ -71,17 +71,17 @@ struct motor_a3901{
 static bool bHorizontalMotorEnable = false;
 static bool bVerticalMotorEnable = false;
 
-int controlHorizontalMotor(int steps, int dir, int delay);
+int controlHorizontalMotor(int steps, int dir, int delay, bool bCheckLimitSwitch);
 int setHorizontalMotorSpeed(int delay);
 int setHorizontalMotorDirection(int direction);
-int startHMotorRunning();
+int startHMotorRunning(bool bCheckLimitSwitch);
 int stopHMotorRunning();
 bool getHMotorEnable();
 
-int controlVerticalMotor(int steps, int dir, int delay);
+int controlVerticalMotor(int steps, int dir, int delay, bool bCheckLimitSwitch);
 int setVerticalMotorSpeed(int delay);
 int setVerticalMotorDirection(int direction);
-int startVMotorRunning();
+int startVMotorRunning(bool bCheckLimitSwitch);
 int stopVMotorRunning();
 bool getVMotorEnable();
 
@@ -90,6 +90,6 @@ int getPiState(int fd, int gpio_num, int gpio_state);
 void motorDelay(int delay);
 
 
-void controlMultipleMotors(int hSteps, int vSteps, int hDir, int vDir, int delay);
+void controlMultipleMotors(int hSteps, int vSteps, int hDir, int vDir, int delay, bool bCheckLimitSwitch);
 void stopMultipleMotors();
 #endif

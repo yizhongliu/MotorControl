@@ -175,8 +175,8 @@ public class ControlService extends Service {
 
                         Log.e(TAG, "receiveCount:" + receiveCount + ", saveCount:" + saveCount + ", ListSize:" + pathPlanningList.size());
 
-                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 200);
-                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 1000);
+                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 200, true);
+                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 1000, true);
 
                         mHandler.sendEmptyMessage(MSG_PATH_PLAN_EXECUTE);
 
@@ -388,8 +388,8 @@ public class ControlService extends Service {
 
         pathPlanningList.clear();
 
-        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 200);
-        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 1000);
+        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 200, true);
+        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 1000, true);
 
         bMotorReset = false;
     }
@@ -521,7 +521,7 @@ public class ControlService extends Service {
 
    //     MotorControlHelper.getInstance(this).controlMultiMotor(hDir, hDelay, vDir, vDelay, duration);
 
-        MotorControlHelper.getInstance(this).controlMultiMotor2(hSteps, vSteps, hDir, vDir, delay);
+        MotorControlHelper.getInstance(this).controlMultiMotor2(hSteps, vSteps, hDir, vDir, delay, false);
     }
 
     public int caculateHDelay(int angle) {

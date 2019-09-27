@@ -31,7 +31,7 @@ extern int motor_down_pi_state;
 extern int motor_up_pi_state;
 
 
-int controlVerticalMotor(int steps, int dir, int delay) {
+int controlVerticalMotor(int steps, int dir, int delay, bool bCheckLimitSwitch) {
 
     LOGD("controlVerticalMotor step: %d, direction: %d, delay %d", steps, dir, delay);
     LOGD("controlVerticalMotor motor_down_pi_state: %d, motor_up_pi_state: %d", motor_down_pi_state, motor_up_pi_state);
@@ -53,25 +53,27 @@ int controlVerticalMotor(int steps, int dir, int delay) {
     controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
     while (steps--) {
   //      LOGE(" step --");
-        if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
-            LOGE("reach up/down pi");
-            if (dir == MOTOR_DIRECTION_UP) {
-                if (motor_down_pi_state == 0) {
-                    LOGE("reach up pi");
-                    motor_up_pi_state = 1;
-                    break;
+        if (bCheckLimitSwitch == true) {
+            if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
+                LOGE("reach up/down pi");
+                if (dir == MOTOR_DIRECTION_UP) {
+                    if (motor_down_pi_state == 0) {
+                        LOGE("reach up pi");
+                        motor_up_pi_state = 1;
+                        break;
+                    }
+                } else if (dir == MOTOR_DIRECTION_DOWN) {
+                    if (motor_up_pi_state == 0) {
+                        LOGE("reach down pi");
+                        motor_down_pi_state = 1;
+                        break;
+                    }
                 }
-            } else if (dir == MOTOR_DIRECTION_DOWN) {
-                if (motor_up_pi_state == 0) {
-                    LOGE("reach down pi");
-                    motor_down_pi_state = 1;
-                    break;
-                }
+            } else {
+                //          LOGE(" unset pi state");
+                motor_up_pi_state = 0;
+                motor_down_pi_state = 0;
             }
-        } else {
-  //          LOGE(" unset pi state");
-            motor_up_pi_state = 0;
-            motor_down_pi_state = 0;
         }
 
         gpioLevel = !gpioLevel;
@@ -116,7 +118,7 @@ int getVerticalMotorDirection() {
     return gVDirection;
 }
 
-int startVMotorRunning() {
+int startVMotorRunning(bool bCheckLimitSwitch) {
      if (vMotorFd == -1) {
         vMotorFd = open(MOTOR_DRV_UP_DOWN, O_RDWR);
         if(vMotorFd == -1)
@@ -139,31 +141,33 @@ int startVMotorRunning() {
      controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
 
      while (true) {
-         if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
-             if (dir == MOTOR_DIRECTION_UP) {
-                 if (motor_down_pi_state == 0) {
-                     motor_up_pi_state = 1;
+         if (bCheckLimitSwitch) {
+             if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
+                 if (dir == MOTOR_DIRECTION_UP) {
+                     if (motor_down_pi_state == 0) {
+                         motor_up_pi_state = 1;
 
-                     if (bVerticalMotorEnable == false) {
-                         break;
+                         if (bVerticalMotorEnable == false) {
+                             break;
+                         }
+
+                         continue;
                      }
+                 } else if (dir == MOTOR_DIRECTION_DOWN) {
+                     if (motor_up_pi_state == 0) {
+                         motor_down_pi_state = 1;
 
-                     continue;
-                 }
-             } else if (dir == MOTOR_DIRECTION_DOWN) {
-                 if (motor_up_pi_state == 0) {
-                     motor_down_pi_state = 1;
+                         if (bVerticalMotorEnable == false) {
+                             break;
+                         }
 
-                     if (bVerticalMotorEnable == false) {
-                         break;
+                         continue;
                      }
-
-                     continue;
                  }
+             } else {
+                 motor_up_pi_state = 0;
+                 motor_down_pi_state = 0;
              }
-         } else {
-             motor_up_pi_state = 0;
-             motor_down_pi_state = 0;
          }
 
          gpioLevel = !gpioLevel;

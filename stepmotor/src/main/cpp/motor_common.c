@@ -61,7 +61,7 @@ void motorDelay(int delay) {
     }
 }
 
-void controlMultipleMotors(int hSteps, int vSteps, int hDir, int vDir, int delay) {
+void controlMultipleMotors(int hSteps, int vSteps, int hDir, int vDir, int delay, bool bCheckLimitSwitch) {
     int counts = 0;
     int steps = 0;
     if (hSteps > vSteps) {
@@ -115,44 +115,47 @@ void controlMultipleMotors(int hSteps, int vSteps, int hDir, int vDir, int delay
     bHorizontalMotorEnable = true;
 
     for (int i = 0; i < steps; i++) {
-        if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
-            LOGE("reach up/down pi");
-            if (vDir == MOTOR_DIRECTION_UP) {
-                if (motor_down_pi_state == 0) {
-                    LOGE("reach up pi");
-                    motor_up_pi_state = 1;
-                    break;
+        if (bCheckLimitSwitch) {
+            if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
+                LOGE("reach up/down pi");
+                if (vDir == MOTOR_DIRECTION_UP) {
+                    if (motor_down_pi_state == 0) {
+                        LOGE("reach up pi");
+                        motor_up_pi_state = 1;
+                        break;
+                    }
+                } else if (vDir == MOTOR_DIRECTION_DOWN) {
+                    if (motor_up_pi_state == 0) {
+                        LOGE("reach down pi");
+                        motor_down_pi_state = 1;
+                        break;
+                    }
                 }
-            } else if (vDir == MOTOR_DIRECTION_DOWN) {
-                if (motor_up_pi_state == 0) {
-                    LOGE("reach down pi");
-                    motor_down_pi_state = 1;
-                    break;
-                }
+            } else {
+                motor_up_pi_state = 0;
+                motor_down_pi_state = 0;
             }
-        } else {
-            motor_up_pi_state = 0;
-            motor_down_pi_state = 0;
+
+            if (getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1) {
+                if (hDir == MOTOR_DIRECTION_LEFT) {
+                    if(motor_right_pi_state == 0){
+                        motor_left_pi_state = 1;
+                        LOGE("Reach left pi");
+                        break;
+                    }
+                } else if (hDir == MOTOR_DIRECTION_RIGHT) {
+                    if(motor_left_pi_state == 0){
+                        motor_right_pi_state = 1;
+                        LOGE("Reach right pi");
+                        break;
+                    }
+                }
+            } else {
+                motor_right_pi_state = 0;
+                motor_left_pi_state = 0;
+            }
         }
 
-        if (getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1) {
-            if (hDir == MOTOR_DIRECTION_LEFT) {
-                if(motor_right_pi_state == 0){
-                    motor_left_pi_state = 1;
-                    LOGE("Reach left pi");
-                    break;
-                }
-            } else if (hDir == MOTOR_DIRECTION_RIGHT) {
-                if(motor_left_pi_state == 0){
-                    motor_right_pi_state = 1;
-                    LOGE("Reach right pi");
-                    break;
-                }
-            }
-        } else {
-            motor_right_pi_state = 0;
-            motor_left_pi_state = 0;
-        }
 
         if (hSteps > vSteps) {
             hGpioLevel = !hGpioLevel;

@@ -97,9 +97,9 @@ public class MotorControlHelper {
     @link    VMotorDownDirection
      * }
      */
-    public int controlMotor(final int motorId, final int steps, final int dir, final int delay) {
+    public int controlMotor(final int motorId, final int steps, final int dir, final int delay, boolean bCheckLimitSwitch) {
         if (steps != 0 && delay != 0) {
-            MotorControl.controlMotor(motorId, steps, dir, delay);
+            MotorControl.controlMotor(motorId, steps, dir, delay, bCheckLimitSwitch);
 
 //            new Thread(new Runnable() {
 //                @Override
@@ -114,7 +114,7 @@ public class MotorControlHelper {
     }
 
 
-    public int controlMultiMotor(final int hDir, final int hDelay, final int vDir, final int vDelay, final int duration) {
+    public int controlMultiMotor(final int hDir, final int hDelay, final int vDir, final int vDelay, final int duration,final boolean bCheckLimitSwitch) {
 
         Log.e(TAG, "ControlService hDir:" + hDir + ", hDelay:" + hDelay + ", vDir:" + vDir + ",vDelay:" + vDelay + ", duration:" + duration);
 
@@ -126,7 +126,7 @@ public class MotorControlHelper {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    int endPos =  MotorControl.startMotorRunning(MotorControl.HMotor);
+                    int endPos =  MotorControl.startMotorRunning(MotorControl.HMotor, bCheckLimitSwitch);
                 }
             }).start();
         }
@@ -137,7 +137,7 @@ public class MotorControlHelper {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    int endPos = MotorControl.startMotorRunning(MotorControl.VMotor);
+                    int endPos = MotorControl.startMotorRunning(MotorControl.VMotor, bCheckLimitSwitch);
                 }
             }).start();
         }
@@ -147,7 +147,7 @@ public class MotorControlHelper {
         return 0;
     }
 
-    public int controlMultiMotor2(final int hSteps, final int vSteps, final int hDir, final int vDir, final int delay) {
+    public int controlMultiMotor2(final int hSteps, final int vSteps, final int hDir, final int vDir, final int delay, final boolean bCheckLimitSwitch) {
 
         if (hSteps == 0 && vSteps == 0) {
             Log.e(TAG, "hStep and vStep can't be 0");
@@ -159,7 +159,7 @@ public class MotorControlHelper {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    MotorControl.controlMotor(VMotor, vSteps, vDir, delay);
+                    MotorControl.controlMotor(VMotor, vSteps, vDir, delay, bCheckLimitSwitch);
 
                     bMotorRunning = false;
 
@@ -172,7 +172,7 @@ public class MotorControlHelper {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    MotorControl.controlMotor(HMotor, hSteps, hDir, delay);
+                    MotorControl.controlMotor(HMotor, hSteps, hDir, delay, bCheckLimitSwitch);
 
                     bMotorRunning = false;
 
@@ -185,7 +185,7 @@ public class MotorControlHelper {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    MotorControl.controlMultiMotors(hSteps, vSteps, hDir, vDir, delay);
+                    MotorControl.controlMultiMotors(hSteps, vSteps, hDir, vDir, delay, bCheckLimitSwitch);
 
                     bMotorRunning = false;
 
