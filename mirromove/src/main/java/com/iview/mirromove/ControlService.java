@@ -19,6 +19,8 @@ import android.view.View;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.iview.mirromove.data.PathPlanning;
+import com.iview.mirromove.util.CommandListProvider;
 import com.iview.mirromove.util.JSONParser;
 import com.iview.mirromove.util.MsgType;
 import com.iview.stepmotor.MotorControl;
@@ -61,7 +63,8 @@ public class ControlService extends Service {
 
     private MessageReceiver mMessageReceiver;
 
-    private List<PathPlanning> pathPlanningList = new ArrayList<>();
+    private ArrayList<PathPlanning> pathPlanningList = new ArrayList<>();
+    private ArrayList<PathPlanning> execPathPlanningList = new ArrayList<>();
 
     private HandlerThread mHandlerThread;
     private Handler mHandler;
@@ -160,11 +163,23 @@ public class ControlService extends Service {
                     case MSG_PATH_PLAN_STOP:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_STOP");
                         bPathPlanning = false;
+                        try {
+                            CommandListProvider.getInstance(ControlService.this).saveCmdList(pathPlanningList);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         break;
                     case MSG_AUTORUNNING_START:
                     case MSG_PATH_PLAN_RUN:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_RUN");
-                        if (!pathPlanningList.isEmpty()) {
+
+                        try {
+                            execPathPlanningList = CommandListProvider.getInstance(ControlService.this).loadCmdList();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return;
+                        }
+                        if (!execPathPlanningList.isEmpty()) {
                             bPathPlanRunning = true;
                             cmdIndex = 0;
                         }
@@ -173,7 +188,7 @@ public class ControlService extends Service {
                             playCallBack.stop();
                         }
 
-                        Log.e(TAG, "receiveCount:" + receiveCount + ", saveCount:" + saveCount + ", ListSize:" + pathPlanningList.size());
+                        Log.e(TAG, "receiveCount:" + receiveCount + ", saveCount:" + saveCount + ", ListSize:" + execPathPlanningList.size());
 
                         MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 200, true);
                         MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 1000, true);
@@ -189,11 +204,11 @@ public class ControlService extends Service {
                     case MSG_PATH_PLAN_EXECUTE:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_EXECUTE");
                         if (bPathPlanRunning == true) {
-                            if (cmdIndex < pathPlanningList.size()) {
-                                String action = pathPlanningList.get(cmdIndex).getAction();
+                            if (cmdIndex < execPathPlanningList.size()) {
+                                String action = execPathPlanningList.get(cmdIndex).getAction();
 
                                 if (action.equals(MsgType.ACTION_MOVE)) {
-                                    int angle = pathPlanningList.get(cmdIndex).getAngle();
+                                    int angle = execPathPlanningList.get(cmdIndex).getAngle();
                                     Log.e(TAG, "move angle:" + angle);
 
                                     controlMotorMove(angle);
@@ -202,9 +217,9 @@ public class ControlService extends Service {
                                         playCallBack.stop();
                                     }
                                 } else if (action.equals(MsgType.ACTION_SHOW)) {
-                                    String url = pathPlanningList.get(cmdIndex).getUrl();
-                                    int rotation = pathPlanningList.get(cmdIndex).getRotateAngle();
-                                    int showTime = pathPlanningList.get(cmdIndex).getImgDisplayTime();
+                                    String url = execPathPlanningList.get(cmdIndex).getUrl();
+                                    int rotation = execPathPlanningList.get(cmdIndex).getRotateAngle();
+                                    int showTime = execPathPlanningList.get(cmdIndex).getImgDisplayTime();
 
                                     if (playCallBack != null) {
                                         playCallBack.play(url, showTime, rotation);
@@ -549,62 +564,7 @@ public class ControlService extends Service {
     }
 
 
-    public class PathPlanning {
-        private String action;
-        private int angle;
-        private int rotateAngle;
-        private String url;
 
-        public int getImgDisplayTime() {
-            return imgDisplayTime;
-        }
-
-        public void setImgDisplayTime(int imgDisplayTime) {
-            this.imgDisplayTime = imgDisplayTime;
-        }
-
-        private int imgDisplayTime;
-
-        PathPlanning(String action, int angle, int rotateAngle, String url, int imgDisplayTime) {
-            this.action = action;
-            this.angle = angle;
-            this.rotateAngle = rotateAngle;
-            this.url = url;
-            this.imgDisplayTime = imgDisplayTime;
-        }
-
-        public String getAction() {
-            return action;
-        }
-
-        public void setAction(String action) {
-            this.action = action;
-        }
-
-        public int getAngle() {
-            return angle;
-        }
-
-        public void setAngle(int angle) {
-            this.angle = angle;
-        }
-
-        public int getRotateAngle() {
-            return rotateAngle;
-        }
-
-        public void setRotateAngle(int rotateAngle) {
-            this.rotateAngle = rotateAngle;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-    }
 
     public void setPlayCallBack(PlayCallBack playCallBack) {
         this.playCallBack = playCallBack;
