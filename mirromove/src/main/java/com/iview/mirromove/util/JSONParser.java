@@ -101,4 +101,19 @@ public class JSONParser {
         return showTime;
     }
 
+    public int getKeystone() {
+        int keystone = 0;
+        JSONObject jsonObject = null;
+        if (mJsonObject != null) {
+            try {
+                jsonObject = mJsonObject .getJSONObject("arg");
+                keystone = jsonObject.optInt("keystone", 0);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return keystone;
+    }
+
 }

@@ -38,3 +38,14 @@ Java_com_iview_stepmotor_MotorControl_nativeSwitchProjector(
 
 }
 
+extern "C" JNIEXPORT void
+Java_com_iview_stepmotor_MotorControl_nativeSetKeyStone(
+        JNIEnv *env,
+        jobject /* this */,jint angle) {
+
+    LOGD("nativeSetKeyStone");
+    if (angle >= -45 && angle <= 45) {
+        setKeyStone(angle);
+    }
+}
+

@@ -9,6 +9,15 @@ public class PathPlanning {
     private int rotateAngle; //视频或图片旋转角度
     private String url;
     private int imgDisplayTime;
+    private int keystone;
+
+    public int getKeystone() {
+        return keystone;
+    }
+
+    public void setKeystone(int keystone) {
+        this.keystone = keystone;
+    }
 
     public int getImgDisplayTime() {
         return imgDisplayTime;
@@ -18,12 +27,13 @@ public class PathPlanning {
         this.imgDisplayTime = imgDisplayTime;
     }
 
-    public PathPlanning(String action, int angle, int rotateAngle, String url, int imgDisplayTime) {
+    public PathPlanning(String action, int angle, int rotateAngle, String url, int imgDisplayTime, int keystone) {
         this.action = action;
         this.angle = angle;
         this.rotateAngle = rotateAngle;
         this.url = url;
         this.imgDisplayTime = imgDisplayTime;
+        this.keystone = keystone;
     }
 
     public PathPlanning(JSONObject object) {
@@ -32,6 +42,7 @@ public class PathPlanning {
         rotateAngle = object.optInt("rotateAngle",  0);
         url = object.optString("url", "");
         imgDisplayTime = object.optInt("imgDisplayTime", 0);
+        keystone = object.optInt("keystone", 0);
     }
 
     public String getAction() {
@@ -74,6 +85,7 @@ public class PathPlanning {
             object.put("rotateAngle", rotateAngle);
             object.put("url", url);
             object.put("imgDisplayTime", imgDisplayTime);
+            object.put("keystone", keystone);
 
         } catch (JSONException e) {
             e.printStackTrace();

@@ -578,4 +578,13 @@ public class MainActivity extends Activity {
             }
         };
     }
+
+    @Override
+    public void onBackPressed() {
+        if (mPlayer != null) {
+            mPlayer.stop();
+        }
+        finish();
+        return;
+    }
 }

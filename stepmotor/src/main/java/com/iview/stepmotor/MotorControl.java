@@ -50,6 +50,10 @@ public class MotorControl {
         nativeSwitchProjector(enable);
     }
 
+    public static void setKeyStone(int angle) {
+        nativeSetKeyStone(angle);
+    }
+
     public static void controlMultiMotors(int hSteps, int vSteps, int hDir, int vDir, int delay) {
         controlMultiMotors(hSteps, vSteps, hDir, vDir, delay, true);
     }
@@ -73,5 +77,7 @@ public class MotorControl {
 
     private native static void nativeControlMultiMotors(int hSteps, int vSteps, int hDir, int vDir, int delay, boolean bCheckLimitSwitch);
     private native static void nativeStopMultiMotors();
+
+    private native static void nativeSetKeyStone(int angle);
 
 }

@@ -89,3 +89,30 @@ int controlProjectorCloseOpen(int powerState){
     close(fd_dlp343x);
     return 1;
 }
+
+int setKeyStone(int angle) {
+    unsigned char enableAddr = 0x88;
+    unsigned char writeAddr = 0xbb;
+    unsigned char sendData[5];
+
+    int ret = -1;
+
+    //enable keystone
+    sendData[0] = 0x01;
+    sendData[1] = 0x78;
+    sendData[2] = 0x01;
+    sendData[3] = 0x00;
+    sendData[4] = 0x00;
+
+    dlp_write_data(enableAddr, sendData, 5);
+
+    sendData[0] = 0;
+    if (angle >= 0) {
+        sendData[1] = angle;
+    } else {
+        sendData[1] = 0xff + angle + 1;
+    }
+
+    ret = dlp_write_data(writeAddr, sendData, 2);
+    return ret;
+}

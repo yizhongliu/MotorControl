@@ -220,6 +220,9 @@ public class ControlService extends Service {
                                     String url = execPathPlanningList.get(cmdIndex).getUrl();
                                     int rotation = execPathPlanningList.get(cmdIndex).getRotateAngle();
                                     int showTime = execPathPlanningList.get(cmdIndex).getImgDisplayTime();
+                                    int keyStone = execPathPlanningList.get(cmdIndex).getKeystone();
+
+                                    MotorControl.setKeyStone(keyStone);
 
                                     if (playCallBack != null) {
                                         playCallBack.play(url, showTime, rotation);
@@ -418,7 +421,7 @@ public class ControlService extends Service {
         controlMotorMove(angle);
 
         if (type.equals(MsgType.TYPE_PATH_PLANNING)) {
-            PathPlanning pathPlanning = new PathPlanning("Move", angle, 0, null, 0);
+            PathPlanning pathPlanning = new PathPlanning("Move", angle, 0, null, 0, 0);
             pathPlanningList.add(pathPlanning);
             Log.e(TAG, "add pathPlanningList :" + "lissize:" + pathPlanningList.size() + ", saveCount:" + saveCount);
         }
@@ -432,9 +435,10 @@ public class ControlService extends Service {
         String url = jsonParser.getUrl();
         int rotation = jsonParser.getRotation();
         int showTime = jsonParser.getShowTime();
+        int keyStone = jsonParser.getKeystone();
 
         if (type.equals(MsgType.TYPE_PATH_PLANNING)) {
-            PathPlanning pathPlanning = new PathPlanning("Show", 0, rotation, url, showTime);
+            PathPlanning pathPlanning = new PathPlanning("Show", 0, rotation, url, showTime, keyStone);
             pathPlanningList.add(pathPlanning);
         }
     }
@@ -444,6 +448,9 @@ public class ControlService extends Service {
         String url = jsonParser.getUrl();
         int rotation = jsonParser.getRotation();
         int showTime = jsonParser.getShowTime();
+        int keyStone = jsonParser.getKeystone();
+
+        MotorControl.setKeyStone(keyStone);
 
         if (playCallBack != null) {
             playCallBack.play(url, showTime, rotation);
