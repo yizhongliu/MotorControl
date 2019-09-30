@@ -48,8 +48,8 @@ public class ControlService extends Service {
     private final static int MSG_AUTORUNNING_STOP = 41;
 
 
-    private final static int BASE_HDELAY = 200;
-    private final static int BASE_VDELAY = 800;
+    private final static int BASE_HDELAY = 100;
+    private final static int BASE_VDELAY = 200;
 
     private final static int MAX_HDELAY = 300;
     private final static int MAX_VDELAY = 1200;
@@ -190,8 +190,8 @@ public class ControlService extends Service {
 
                         Log.e(TAG, "receiveCount:" + receiveCount + ", saveCount:" + saveCount + ", ListSize:" + execPathPlanningList.size());
 
-                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 200, true);
-                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 1000, true);
+                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 100, true);
+                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 200, true);
 
                         mHandler.sendEmptyMessage(MSG_PATH_PLAN_EXECUTE);
 
@@ -360,6 +360,13 @@ public class ControlService extends Service {
                         mHandler.sendMessage(runMessage);
                     } else if (action.equals(MsgType.ACTION_RUN_STOP)) {
                         mHandler.sendEmptyMessage(MSG_PATH_PLAN_RUN_STOP);
+                    }  else if (action.equals(MsgType.ACTION_SET_PARAM)) {
+                        Message showMessage = new Message();
+                        showMessage.what = MSG_CONTROL_SET_PARAM;
+                        Bundle bundle = new Bundle();
+                        bundle.putString("message" , messge);
+                        showMessage.setData(bundle);
+                        mHandler.sendMessage(showMessage);
                     }
                 }
 
@@ -406,8 +413,8 @@ public class ControlService extends Service {
 
         pathPlanningList.clear();
 
-        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 200, true);
-        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 1000, true);
+        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 100, true);
+        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 200, true);
 
         bMotorReset = false;
     }
@@ -460,6 +467,9 @@ public class ControlService extends Service {
     private void HandleSetParam(String message) {
         JSONParser jsonParser = new JSONParser(message);
         int rotation = jsonParser.getRotation();
+        int keystone = jsonParser.getKeystone();
+
+        MotorControl.setKeyStone(keystone);
 
         if (playCallBack != null) {
             playCallBack.setParam(rotation);
