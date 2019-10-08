@@ -56,4 +56,5 @@ dependencies {
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.3@aar'
 
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
+    implementation files('libs/nanohttpd-2.2.0.jar')
 }

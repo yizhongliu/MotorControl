@@ -36,6 +36,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.iview.mirromove.net.HttpServerImpl;
 import com.iview.mirromove.util.MediaFileUtil;
 import com.iview.mirromove.util.MsgType;
 import com.iview.stepmotor.MotorControl;
@@ -92,6 +93,8 @@ public class MainActivity extends Activity {
 
     private Matrix matrix = new Matrix();
 
+    HttpServerImpl httpServer;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,6 +146,11 @@ public class MainActivity extends Activity {
 
         unbindService(netConnection);
         unbindService(socketConnection);
+
+        if (httpServer != null) {
+            httpServer.stop();
+            httpServer = null;
+        }
 
     }
 
@@ -279,6 +287,17 @@ public class MainActivity extends Activity {
             }
 
             socketService.startTcpServer(port);
+
+            if (httpServer == null) {
+                String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/httpserver";
+                httpServer = new HttpServerImpl(path);
+            }
+            try {
+                httpServer.start();
+                Log.e(TAG, "httpServer start");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
@@ -286,7 +305,7 @@ public class MainActivity extends Activity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    ipText.setText("没有网络");
+                    ipText.setText(R.string.network_unavailable);
                 }
             });
 
@@ -294,6 +313,10 @@ public class MainActivity extends Activity {
 
             if (socketService != null) {
                 socketService.stopTcpServer();
+            }
+
+            if (httpServer != null) {
+                httpServer.stop();
             }
         }
     }

@@ -118,7 +118,7 @@ public class SocketService extends Service {
                 }
 
                 serverSocket.close();
-            } catch (Exception e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
@@ -142,7 +142,7 @@ public class SocketService extends Service {
                     is = socket.getInputStream();
                     pw = new PrintWriter(os,true);
                     start();
-                } catch (Exception e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -168,7 +168,7 @@ public class SocketService extends Service {
 
                             parseMsg(rcvMsg);
                         }
-                    } catch (Exception e) {
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
