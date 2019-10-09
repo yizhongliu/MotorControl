@@ -69,11 +69,13 @@ public class MotorControlUnity extends UnityPlayerActivity {
                         MotorControl.setMotorSpeed(MotorControl.HMotor, mMotorDataList.get(cmdIndex).hSpeed);
                         MotorControl.setMotorDirection(MotorControl.HMotor, mMotorDataList.get(cmdIndex).hDirection);
 
+                        final boolean bCheckLimitSwitch = mMotorDataList.get(cmdIndex).bCheckLimitSwitch;
+
                         if (mMotorDataList.get(cmdIndex).hSpeed != 0 && MotorControl.getMotorEnable(MotorControl.HMotor) == false) {
                             new Thread() {
                                 @Override
                                 public void run() {
-                                    MotorControl.startMotorRunning(MotorControl.HMotor, mMotorDataList.get(cmdIndex).bCheckLimitSwitch);
+                                    MotorControl.startMotorRunning(MotorControl.HMotor, bCheckLimitSwitch);
                                 }
                             }.start();
                         } else if (mMotorDataList.get(cmdIndex).hSpeed == 0) {
@@ -87,7 +89,7 @@ public class MotorControlUnity extends UnityPlayerActivity {
                             new Thread() {
                                 @Override
                                 public void run() {
-                                    MotorControl.startMotorRunning(MotorControl.VMotor, mMotorDataList.get(cmdIndex).bCheckLimitSwitch);
+                                    MotorControl.startMotorRunning(MotorControl.VMotor, bCheckLimitSwitch);
                                 }
                             }.start();
                         } else if (mMotorDataList.get(cmdIndex).vSpeed == 0) {

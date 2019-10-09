@@ -14,6 +14,9 @@ public class MotorControl {
     public static final int VMotorUpDirection = 1;
     public static final int VMotorDownDirection = 0;
 
+    public static final int PROJECTOR_ON = 1;
+    public static final int PROJECTOR_OFF = 0;
+
     public static int controlMotor(int motorId, int steps, int dir, int delay) {
         return controlMotor(motorId, steps, dir, delay, true);
     }

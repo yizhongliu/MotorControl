@@ -49,13 +49,13 @@ public class ControlService extends Service {
 
 
     private final static int BASE_HDELAY = 100;
-    private final static int BASE_VDELAY = 200;
+    private final static int BASE_VDELAY = 60;
 
     private final static int MAX_HDELAY = 300;
     private final static int MAX_VDELAY = 1200;
 
     private final static int BASE_HSTEP = 200;
-    private final static int BASE_VSTEP = 50;
+    private final static int BASE_VSTEP = 100;
     private final static int BASE_DELAY = 200;
 
     int receiveCount = 0;
@@ -189,9 +189,10 @@ public class ControlService extends Service {
                         }
 
                         Log.e(TAG, "receiveCount:" + receiveCount + ", saveCount:" + saveCount + ", ListSize:" + execPathPlanningList.size());
+                        MotorControl.swtichProjector(MotorControl.PROJECTOR_OFF);
 
                         MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 100, true);
-                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 200, true);
+                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 60, true);
 
                         mHandler.sendEmptyMessage(MSG_PATH_PLAN_EXECUTE);
 
@@ -199,6 +200,7 @@ public class ControlService extends Service {
                     case MSG_AUTORUNNING_STOP:
                     case MSG_PATH_PLAN_RUN_STOP:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_RUN_STOP");
+                        MotorControl.swtichProjector(MotorControl.PROJECTOR_ON);
                         bPathPlanRunning = false;
                         break;
                     case MSG_PATH_PLAN_EXECUTE:
@@ -208,6 +210,7 @@ public class ControlService extends Service {
                                 String action = execPathPlanningList.get(cmdIndex).getAction();
 
                                 if (action.equals(MsgType.ACTION_MOVE)) {
+                                    MotorControl.swtichProjector(MotorControl.PROJECTOR_OFF);
                                     int angle = execPathPlanningList.get(cmdIndex).getAngle();
                                     Log.e(TAG, "move angle:" + angle);
 
@@ -217,6 +220,8 @@ public class ControlService extends Service {
                                         playCallBack.stop();
                                     }
                                 } else if (action.equals(MsgType.ACTION_SHOW)) {
+                                    MotorControl.swtichProjector(MotorControl.PROJECTOR_ON);
+
                                     String url = execPathPlanningList.get(cmdIndex).getUrl();
                                     int rotation = execPathPlanningList.get(cmdIndex).getRotateAngle();
                                     int showTime = execPathPlanningList.get(cmdIndex).getImgDisplayTime();
@@ -488,6 +493,8 @@ public class ControlService extends Service {
         int vSteps = BASE_VSTEP;
         int delay = BASE_DELAY;
 
+        int[] steps = new int[2];
+
         if (angle == 0 || angle == 360) {
             hDir = MotorControlHelper.HMotorRightDirection;
             vDelay = 0;
@@ -496,7 +503,7 @@ public class ControlService extends Service {
             vDir = MotorControlHelper.VMotorDownDirection;
             hDelay = 0;
             hSteps = 0;
-            delay = BASE_DELAY * 4;
+            delay = BASE_DELAY * 2;
         } else if (angle == 180) {
             hDir = MotorControlHelper.HMotorLeftDirection;
             vDelay = 0;
@@ -505,7 +512,7 @@ public class ControlService extends Service {
             vDir = MotorControlHelper.VMotorUpDirection;
             hDelay = 0;
             hSteps = 0;
-            delay = BASE_DELAY * 4;
+            delay = BASE_DELAY * 2;
         } else if (angle > 0 && angle < 90) {
             hDir = MotorControlHelper.HMotorRightDirection;
             vDir = MotorControlHelper.VMotorDownDirection;
@@ -514,8 +521,12 @@ public class ControlService extends Service {
 //
 //            hDelay = 500;
 //            vDelay = (int)(hDelay * 4 * Math.abs(tag));
-            hDelay = caculateHDelay(angle);
-            vDelay = caculateVDelay(angle);
+//            hDelay = caculateHDelay(angle);
+//            vDelay = caculateVDelay(angle);
+
+            steps = caculateSteps(angle);
+            hSteps = steps[0];
+            vSteps = steps[1];
 
         } else if (angle > 90 && angle < 180) {
             hDir = MotorControlHelper.HMotorLeftDirection;
@@ -525,8 +536,12 @@ public class ControlService extends Service {
 //
 //            hDelay = 500;
 //            vDelay = (int)(hDelay * 4 * Math.abs(tag));
-              hDelay = caculateHDelay(angle);
-              vDelay = caculateVDelay(angle);
+//              hDelay = caculateHDelay(angle);
+//              vDelay = caculateVDelay(angle);
+
+            steps = caculateSteps(angle);
+            hSteps = steps[0];
+            vSteps = steps[1];
 
         } else if (angle > 180 && angle < 270) {
             hDir = MotorControlHelper.HMotorLeftDirection;
@@ -537,8 +552,12 @@ public class ControlService extends Service {
 //            hDelay = 500;
 //            vDelay = (int)(hDelay * 4 * Math.abs(tag));
 
-            hDelay = caculateHDelay(angle);
-            vDelay = caculateVDelay(angle);
+//            hDelay = caculateHDelay(angle);
+//            vDelay = caculateVDelay(angle);
+
+            steps = caculateSteps(angle);
+            hSteps = steps[0];
+            vSteps = steps[1];
         } else if (angle > 270 && angle < 360) {
             hDir = MotorControlHelper.HMotorRightDirection;
             vDir = MotorControlHelper.VMotorUpDirection;
@@ -547,8 +566,12 @@ public class ControlService extends Service {
 //
 //            hDelay = 500;
 //            vDelay = (int)(hDelay * 4 * Math.abs(tag));
-            hDelay = caculateHDelay(angle);
-            vDelay = caculateVDelay(angle);
+//            hDelay = caculateHDelay(angle);
+//            vDelay = caculateVDelay(angle);
+
+            steps = caculateSteps(angle);
+            hSteps = steps[0];
+            vSteps = steps[1];
         }
 
    //     MotorControlHelper.getInstance(this).controlMultiMotor(hDir, hDelay, vDir, vDelay, duration);
@@ -578,6 +601,52 @@ public class ControlService extends Service {
         }
 
         return vdelay;
+    }
+
+
+    public int caculateHStep(int angle) {
+        int hStep = BASE_HSTEP;
+        double sin = Math.cos(Math.toRadians(angle));
+        if (sin != 0) {
+            hStep = (int) (hStep * Math.abs(sin));
+        }
+
+        return hStep;
+    }
+
+    public int caculateVStep(int angle) {
+        int vStep = BASE_VSTEP;
+        double cos = Math.sin(Math.toRadians(angle));
+        vStep = (int) (vStep * Math.abs(cos));
+
+
+        return vStep;
+    }
+
+    public int[] caculateSteps(int angle) {
+        int[] steps = {BASE_HSTEP, BASE_VSTEP};
+        steps[1] = caculateVStep(angle);
+        steps[0] = caculateHStep(angle);
+        int div;
+        if (steps[0] != 0 && steps[1] != 0) {
+            if (steps[0] > steps[1]) {
+                div = steps[0] / steps[1];
+                if (div != 1 && (div % 2) != 0 ) {
+                    div = div + 1;
+                }
+
+                steps[0] = steps[1] * div;
+            } else {
+                div = steps[1] / steps[0];
+                if (div != 1 && (div % 2) != 0 ) {
+                    div = div + 1;
+                }
+
+                steps[1] = steps[0] * div;
+            }
+        }
+
+        return steps;
     }
 
 

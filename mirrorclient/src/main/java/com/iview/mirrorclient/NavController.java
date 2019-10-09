@@ -178,13 +178,13 @@ public class NavController extends View {
                 Log.e(TAG, "innerCenterX: " + innerCenterX + ", innerCenterY:" + innerCenterY + ", realx:" + realWidth/2 + ", realY:" + realHeight/2);
                 double angle = Math.toDegrees(Math.atan((realHeight /2 - innerCenterY) / (innerCenterX - realWidth / 2)));
                 if (innerCenterX >= realWidth / 2 && innerCenterY < realHeight/2) {
-
+                    angle = 360 - angle;
                 } else if (innerCenterX < realWidth / 2 && innerCenterY < realHeight/2) {
-                    angle = angle + 180;
+                    angle = 180 + Math.abs(angle) ;
                 } else if (innerCenterX < realWidth / 2 && innerCenterY >= realHeight/2) {
-                    angle = angle + 180;
+                    angle =180 - angle;
                 } else if (innerCenterX >= realWidth / 2 && innerCenterY >= realHeight/2) {
-                    angle = angle + 360;
+                    angle = Math.abs(angle);
                 }
                 Log.e(TAG, " angle :" + angle);
 
