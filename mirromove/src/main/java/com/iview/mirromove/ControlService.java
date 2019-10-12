@@ -78,6 +78,8 @@ public class ControlService extends Service {
 
     private int cmdIndex;
 
+    private int mPreKeystone = 0;
+
     MyMotorCallBack motorCallBack = new MyMotorCallBack();
 
     private ControlService.ControlBinder mBinder = new ControlService.ControlBinder();
@@ -171,27 +173,34 @@ public class ControlService extends Service {
                         break;
                     case MSG_AUTORUNNING_START:
                     case MSG_PATH_PLAN_RUN:
-                        Log.e(TAG, "handle message MSG_PATH_PLAN_RUN");
+                        Log.e(TAG, "handle message MSG_PATH_PLAN_RUN2");
 
                         try {
+                            Log.e(TAG, "get list");
                             execPathPlanningList = CommandListProvider.getInstance(ControlService.this).loadCmdList();
                         } catch (Exception e) {
                             e.printStackTrace();
                             return;
                         }
+
+                        if (playCallBack != null) {
+                            playCallBack.autoRunStart();
+                            playCallBack.stop();
+                        }
+
                         if (!execPathPlanningList.isEmpty()) {
                             bPathPlanRunning = true;
                             cmdIndex = 0;
                         }
 
                         if (playCallBack != null) {
-                            playCallBack.stop();
+                            playCallBack.autoRunStart();
                         }
 
                         Log.e(TAG, "receiveCount:" + receiveCount + ", saveCount:" + saveCount + ", ListSize:" + execPathPlanningList.size());
-                        MotorControl.swtichProjector(MotorControl.PROJECTOR_OFF);
+                   //     MotorControl.swtichProjector(MotorControl.PROJECTOR_OFF);
 
-                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 100, true);
+                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 30, true);
                         MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 60, true);
 
                         mHandler.sendEmptyMessage(MSG_PATH_PLAN_EXECUTE);
@@ -200,8 +209,12 @@ public class ControlService extends Service {
                     case MSG_AUTORUNNING_STOP:
                     case MSG_PATH_PLAN_RUN_STOP:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_RUN_STOP");
-                        MotorControl.swtichProjector(MotorControl.PROJECTOR_ON);
+                 //       MotorControl.swtichProjector(MotorControl.PROJECTOR_ON);
                         bPathPlanRunning = false;
+
+                        if (playCallBack != null) {
+                            playCallBack.autoRunStop();
+                        }
                         break;
                     case MSG_PATH_PLAN_EXECUTE:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_EXECUTE");
@@ -210,7 +223,7 @@ public class ControlService extends Service {
                                 String action = execPathPlanningList.get(cmdIndex).getAction();
 
                                 if (action.equals(MsgType.ACTION_MOVE)) {
-                                    MotorControl.swtichProjector(MotorControl.PROJECTOR_OFF);
+                    //                MotorControl.swtichProjector(MotorControl.PROJECTOR_OFF);
                                     int angle = execPathPlanningList.get(cmdIndex).getAngle();
                                     Log.e(TAG, "move angle:" + angle);
 
@@ -220,18 +233,24 @@ public class ControlService extends Service {
                                         playCallBack.stop();
                                     }
                                 } else if (action.equals(MsgType.ACTION_SHOW)) {
-                                    MotorControl.swtichProjector(MotorControl.PROJECTOR_ON);
+                     //               MotorControl.swtichProjector(MotorControl.PROJECTOR_ON);
 
                                     String url = execPathPlanningList.get(cmdIndex).getUrl();
                                     int rotation = execPathPlanningList.get(cmdIndex).getRotateAngle();
                                     int showTime = execPathPlanningList.get(cmdIndex).getImgDisplayTime();
                                     int keyStone = execPathPlanningList.get(cmdIndex).getKeystone();
 
-                                    MotorControl.setKeyStone(keyStone);
+                                    if (mPreKeystone != keyStone) {
+                                        MotorControl.setKeyStone(keyStone);
+                                        mPreKeystone = keyStone;
+                                    }
+
 
                                     if (playCallBack != null) {
                                         playCallBack.play(url, showTime, rotation);
                                     }
+
+                                  //
                                 }
 
                                 cmdIndex++;
@@ -379,7 +398,7 @@ public class ControlService extends Service {
                 if (type.equals(MsgType.TYPE_AUTO_RUNNING)) {
                     if (bPathPlanning) {
                         Log.e(TAG, "bPathPlanning is true ");
-                        return;
+                        bPathPlanning = false;
                     }
 
                     if (action.equals(MsgType.ACTION_START)) {
@@ -418,8 +437,8 @@ public class ControlService extends Service {
 
         pathPlanningList.clear();
 
-        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 100, true);
-        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 200, true);
+        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 60, true);
+        MotorControlHelper.getInstance(this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 60, true);
 
         bMotorReset = false;
     }
@@ -492,6 +511,7 @@ public class ControlService extends Service {
         int hSteps = BASE_HSTEP;
         int vSteps = BASE_VSTEP;
         int delay = BASE_DELAY;
+
 
         int[] steps = new int[2];
 
@@ -572,6 +592,10 @@ public class ControlService extends Service {
             steps = caculateSteps(angle);
             hSteps = steps[0];
             vSteps = steps[1];
+        }
+
+        if (bPathPlanRunning) {
+            delay = BASE_DELAY / 4;
         }
 
    //     MotorControlHelper.getInstance(this).controlMultiMotor(hDir, hDelay, vDir, vDelay, duration);

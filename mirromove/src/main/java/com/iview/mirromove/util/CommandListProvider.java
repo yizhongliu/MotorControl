@@ -66,6 +66,7 @@ public class CommandListProvider {
     }
 
     public ArrayList<PathPlanning> loadCmdList() throws IOException, JSONException {
+        Log.e(TAG, "Enter loadCmdList");
         synchronized (commandListProvider) {
             ArrayList<PathPlanning> mediaInfos = new ArrayList<PathPlanning>();
             BufferedReader reader = null;
@@ -89,6 +90,8 @@ public class CommandListProvider {
                     reader.close();
                 }
             }
+
+            Log.e(TAG, "loadCmdList size:" + mediaInfos.size());
             return mediaInfos;
         }
     }

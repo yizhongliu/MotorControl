@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="RotateCircleImageView">
+        <attr name="image" format="reference" />
+        <attr name="rotate_sd" format="float" />
+        <attr name="rotate_fx" format="integer" />
+        <attr name="isRotate" format="boolean" />
+        <attr name="circle_back_width" format="dimension" />
+        <attr name="circle_back_color" format="color" />
+    </declare-styleable>
+</resources>

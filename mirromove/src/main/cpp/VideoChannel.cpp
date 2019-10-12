@@ -75,7 +75,7 @@ void VideoChannel::start() {
     frames.setWork(1);
 
     char args[256];
-    snprintf(args, sizeof(args), "rotate=%d", rotate);
+    snprintf(args, sizeof(args), "rotate=%d*PI/180", rotate);
     init_filter(args);
     //可以进行解码播放？
     //解码
@@ -311,6 +311,10 @@ int VideoChannel::init_filter(const char *filters_descr) {
     AVFilterInOut *inputs = avfilter_inout_alloc();
     AVRational time_base = BaseChannel::time_base;
     enum AVPixelFormat pix_fmts[] = {codecContext->pix_fmt, AV_PIX_FMT_NONE};
+
+    if (filters_descr != 0) {
+        LOGE("filters_descr : %s", filters_descr);
+    }
 
     filter_graph = avfilter_graph_alloc();
     if (!outputs || ! inputs || !filter_graph) {

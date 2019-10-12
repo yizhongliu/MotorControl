@@ -39,6 +39,7 @@ import android.widget.Toast;
 import com.iview.mirromove.net.HttpServerImpl;
 import com.iview.mirromove.util.MediaFileUtil;
 import com.iview.mirromove.util.MsgType;
+import com.iview.mirromove.view.RotateCircleImageView;
 import com.iview.stepmotor.MotorControl;
 import com.tbruyelle.rxpermissions2.Permission;
 import com.tbruyelle.rxpermissions2.RxPermissions;
@@ -463,7 +464,7 @@ public class MainActivity extends Activity {
 
 
                     if (MediaFileUtil.isImageFileType(url)) {
-                        imageUrl =  Environment.getExternalStorageDirectory() + "/" + url;
+                        imageUrl =  Environment.getExternalStorageDirectory() + "/httpserver/" + url;
                         if (bVideoShow) {
                             Log.e(TAG, "stop player");
                             if (mPlayer != null) {
@@ -484,14 +485,17 @@ public class MainActivity extends Activity {
 
                         imagePriView.setVisibility(View.VISIBLE);
 
+                        imagePriView.setImageBitmap(null);
+                        Log.e(TAG, "set Image Bitmap2");
                         imagePriView.setImageBitmap(bitmap);
+                     //   imagePriView.rotateCircle(0, rotation);
                         imagePriView.setRotation(rotation);
 
                         if (time != -1) {
                             mBackHandler.sendEmptyMessageDelayed(MSG_IMAGE_DISMISS, time);
                         }
                     } else if (MediaFileUtil.isVideoFileType(url)) {
-                        String absUrl =  Environment.getExternalStorageDirectory() + "/" + url;
+                        String absUrl =  Environment.getExternalStorageDirectory() + "/httpserver/" + url;
                         //先隐藏图片显示
                         if (bImageShow) {
                             imagePriView.setVisibility(View.INVISIBLE);
@@ -541,6 +545,7 @@ public class MainActivity extends Activity {
 //
 //                        imagePriView.setImageBitmap(bitmap);
                         imagePriView.setRotation(rotation);
+                      //  imagePriView.rotateCircle(0, rotation);
                     } else if (bVideoShow) {
                    //     mPlayer.setParam(NativePlayer.PARAM_VDEV_D3D_ROTATE, (int) rotation);
                     }
@@ -575,6 +580,27 @@ public class MainActivity extends Activity {
 
                 bImageShow = false;
             }
+        }
+
+        @Override
+        public void autoRunStart() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ipText.setVisibility(View.INVISIBLE);
+                }
+            });
+
+        }
+
+        @Override
+        public void autoRunStop() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ipText.setVisibility(View.VISIBLE);
+                }
+            });
         }
     }
 

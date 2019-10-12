@@ -1,18 +1,43 @@
 package com.iview.mirromove.net;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.ImageDecoder;
+import android.media.MediaMetadataRetriever;
+import android.media.ThumbnailUtils;
+import android.os.Build;
+import android.provider.MediaStore;
 import android.util.Log;
+import android.util.Size;
+import android.widget.ImageView;
+
+import androidx.annotation.RequiresApi;
 
 import com.iview.mirromove.util.FileUtils;
+import com.iview.mirromove.util.MediaFileUtil;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import fi.iki.elonen.NanoHTTPD;
+
+import static android.media.MediaMetadataRetriever.METADATA_KEY_DURATION;
+import static android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT;
+import static android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH;
+import static android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC;
 
 /**
  *
@@ -31,6 +56,7 @@ public class HttpServerImpl extends NanoHTTPD {
     private static final String REQUEST_TEST = "/test";
     private static final String REQUEST_ACTION_GET_FILE = "/getFile";
     private static final String REQUEST_ACTION_GET_FILE_LIST = "/getFileList";
+    private static final String REQUEST_ACTION_SAMPLE = "/sample";
 
     private String mBasePath;
 
@@ -40,22 +66,62 @@ public class HttpServerImpl extends NanoHTTPD {
         mBasePath = basePath;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public Response serve(IHTTPSession session) {
         String strUri = session.getUri();
         String method = session.getMethod().name();
+
         Log.e(TAG,"Response serve uri = " + strUri + ", method = " + method);
+        Log.e(TAG, "getInputStream:" + session.getInputStream().toString() + ", head:" + session.getHeaders().toString() + ", getParam" + session.getParms().toString() + ", queryString" + session.getQueryParameterString());
 
         String absPath = mBasePath + strUri;
         File file = new File(absPath);
 
-        if (file.exists()) {
-            if (file.isDirectory()) {
-                return responseFileList(session, absPath);
+
+
+        if (Method.POST.equals(method) || Method.PUT.equals(method)) {
+            Map<String, String> files = new HashMap<>();
+            try {
+                session.parseBody(files);
+            } catch (IOException ioe) {
+                return newFixedLengthResponse("Internal Error IO Exception: " + ioe.getMessage());
+            } catch (ResponseException re) {
+                return newFixedLengthResponse(re.getStatus(), MIME_PLAINTEXT, re.getMessage());
+            }
+
+        } else {
+            String resize = session.getHeaders().get("resize");
+            if (resize != null) {
+                try {
+                    String[] size = resize.split(",");
+                    int width = Integer.parseInt(size[0]);
+                    int height = Integer.parseInt(size[1]);
+
+                    if (file.exists()) {
+                        if (file.isDirectory()) {
+                            return responseFileList(session, absPath);
+                        } else {
+                            return responseThumbnailFileStream(session, absPath, width, height);
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
             } else {
-                return responseFileStream(session,absPath);
+
+                if (file.exists()) {
+                    if (file.isDirectory()) {
+                        return responseFileList(session, absPath);
+                    } else {
+                        return responseFileStream(session,absPath);
+                    }
+                }
             }
         }
+
+
+
 
 //        if(REQUEST_ROOT.equals(strUri)) {   // 根目录
 //            return responseFileList(session, absPath);
@@ -117,6 +183,51 @@ public class HttpServerImpl extends NanoHTTPD {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private Response responseThumbnailFileStream(IHTTPSession session, String filePath, int width, int height) {
+        File file = new File(filePath);
+        if (MediaFileUtil.isImageFileType(filePath)) {
+
+            Bitmap oriBitmat = BitmapFactory.decodeFile(filePath);
+
+            Bitmap thumbnailBitmap = ThumbnailUtils.extractThumbnail(oriBitmat, width, height);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            thumbnailBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+            InputStream isBm = new ByteArrayInputStream(baos.toByteArray());
+
+            return newChunkedResponse(Response.Status.OK, "application/octet-stream", isBm);
+
+        } else if (MediaFileUtil.isVideoFileType(filePath)) {
+
+            Size size = new Size(width, height);
+            try {
+                Bitmap videoThumbnailBitmap = ThumbnailUtils.createVideoThumbnail(filePath, MediaStore.Images.Thumbnails.MINI_KIND);
+
+                if (videoThumbnailBitmap != null) {
+                    Bitmap thumbnailBitmap = ThumbnailUtils.extractThumbnail(videoThumbnailBitmap, width, height);
+
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    thumbnailBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                    InputStream isBm = new ByteArrayInputStream(baos.toByteArray());
+
+                    return newChunkedResponse(Response.Status.OK, "application/octet-stream", isBm);
+                } else {
+                    return response404(session);
+                }
+
+
+            } catch (Exception e) {
+                return response404(session);
+            }
+
+
+        } else {
+            return response404(session);
+        }
+
+    }
+
     /**
      *
      * @param session http请求
@@ -164,5 +275,6 @@ public class HttpServerImpl extends NanoHTTPD {
     private Response responseJson(){
         return newFixedLengthResponse("调用成功");
     }
+
 }
 
