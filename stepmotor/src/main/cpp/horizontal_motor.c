@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <android/log.h>
 
-#define MOTOR_DRV_LEFT_RIGHT     "/dev/motor_gpio_left_right"
+
 
 #define  LOG_TAG    "horizontal_motor"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -24,20 +24,19 @@ static int hMotorFd = -1;
 static struct timeval tv;
 static struct timeval ts;
 
-bool bHorizontalMotorEnable = false;
 
 int gHDelay = 2000;
 int gHDirection = 0;
 
-static int motor_left_pi_state = 0;
-static int motor_right_pi_state = 0;
+extern int motor_left_pi_state;
+extern int motor_right_pi_state;
 
 static int getLeftRightPiState(int fd, int gpio_num, int gpio_state)
 {
     return getPiState(fd, gpio_num, gpio_state);
 }
 
-int controlHorizontalMotor(int steps, int dir, int delay) {
+int controlHorizontalMotor(int steps, int dir, int delay, bool bCheckLimitSwitch) {
 
     LOGD("controlHorizontalMotor step: %d, direction: %d, delay %d", steps, dir, delay);
 
@@ -57,32 +56,34 @@ int controlHorizontalMotor(int steps, int dir, int delay) {
     int gpioLevel = 0;
     controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, gpioLevel);
     while (steps--) {
-
-        if (dir == MOTOR_DIRECTION_LEFT) {
-            if (getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1) {
-                if(motor_right_pi_state == 0){
-                    motor_left_pi_state = 1;
-                    LOGE("Reach left pi");
-                    break;
+        if (bCheckLimitSwitch == true) {
+            if (dir == MOTOR_DIRECTION_LEFT) {
+                if (getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1) {
+                    if(motor_right_pi_state == 0){
+                        motor_left_pi_state = 1;
+                        LOGE("Reach left pi");
+                        break;
+                    }
                 }
-            }
-            else{
-                motor_right_pi_state = 0;
-                motor_left_pi_state = 0;
-            }
-        } else if (dir == MOTOR_DIRECTION_RIGHT) {
-            if(getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1){
-                if(motor_left_pi_state == 0){
-                    motor_right_pi_state = 1;
-                    LOGE("Reach right pi");
-                    break;
+                else{
+                    motor_right_pi_state = 0;
+                    motor_left_pi_state = 0;
                 }
-            }
-            else{
-                motor_right_pi_state = 0;
-                motor_left_pi_state = 0;
+            } else if (dir == MOTOR_DIRECTION_RIGHT) {
+                if(getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1){
+                    if(motor_left_pi_state == 0){
+                        motor_right_pi_state = 1;
+                        LOGE("Reach right pi");
+                        break;
+                    }
+                }
+                else{
+                    motor_right_pi_state = 0;
+                    motor_left_pi_state = 0;
+                }
             }
         }
+
 
         gpioLevel = !gpioLevel;
     	controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, gpioLevel);
@@ -125,7 +126,7 @@ int getHorizontalMotorDirection() {
     return gHDirection;
 }
 
-int startHMotorRunning() {
+int startHMotorRunning(bool bCheckLimitSwitch) {
 
     hMotorFd = open(MOTOR_DRV_LEFT_RIGHT, O_RDWR);
     if(hMotorFd == -1)
@@ -148,33 +149,43 @@ int startHMotorRunning() {
     controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, gpioLevel);
 
      while (true) {
+         if (bCheckLimitSwitch) {
+             if (dir == MOTOR_DIRECTION_LEFT) {
+                 if (getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1) {
+                     if(motor_right_pi_state == 0){
+                         motor_left_pi_state = 1;
+                         LOGE("Reach left pi");
 
-         if (dir == MOTOR_DIRECTION_LEFT) {
-             if (getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1) {
-                 if(motor_right_pi_state == 0){
-                     motor_left_pi_state = 1;
-                     LOGE("Reach left pi");
-                     continue;
+                         if (bHorizontalMotorEnable == false) {
+                             break;
+                         }
+
+                         continue;
+                     }
                  }
-             }
-             else{
-                 motor_right_pi_state = 0;
-                 motor_left_pi_state = 0;
-             }
-         } else if (dir == MOTOR_DIRECTION_RIGHT) {
-             if(getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1){
-                 if(motor_left_pi_state == 0){
-                     motor_right_pi_state = 1;
-                     LOGE("Reach right pi");
-                     continue;
+                 else{
+                     motor_right_pi_state = 0;
+                     motor_left_pi_state = 0;
                  }
-             }
-             else{
-                 motor_right_pi_state = 0;
-                 motor_left_pi_state = 0;
+             } else if (dir == MOTOR_DIRECTION_RIGHT) {
+                 if(getPiState(hMotorFd, MOTO_SENSOR_LEFT_RIGHT_1, 0) == 1){
+                     if(motor_left_pi_state == 0){
+                         motor_right_pi_state = 1;
+                         LOGE("Reach right pi");
+
+                         if (bHorizontalMotorEnable == false) {
+                             break;
+                         }
+
+                         continue;
+                     }
+                 }
+                 else{
+                     motor_right_pi_state = 0;
+                     motor_left_pi_state = 0;
+                 }
              }
          }
-
 
          gpioLevel = !gpioLevel;
          controlMotorDev(hMotorFd, MOTO_STEP_LEFT_RIGHT, gpioLevel);

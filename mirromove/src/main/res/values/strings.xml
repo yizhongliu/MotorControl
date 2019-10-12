@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">MirroMove</string>
+    <string name="network_unavailable">Network is not available</string>
+</resources>

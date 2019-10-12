@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Server Ip"/>
+        <EditText
+            android:id="@+id/serverIpEdit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="192.168.0.101"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Server Port"/>
+        <EditText
+            android:id="@+id/serverPortEdit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="8091"
+            />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/startButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start tcp client"/>
+
+
+    <com.iview.mirrorclient.NavController
+        android:id="@+id/navController"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:id="@+id/imgButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="show img"/>
+
+        <Button
+            android:id="@+id/vidButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="show vid"/>
+        <EditText
+        android:id="@+id/paramEdit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="10"/>
+
+        <Button
+            android:id="@+id/setParam"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="param"/>
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:id="@+id/pathStart"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="planStart"/>
+
+        <Button
+            android:id="@+id/pathStop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="planStop"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:id="@+id/up"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="up"/>
+
+        <Button
+            android:id="@+id/down"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="down"/>
+
+        <Button
+            android:id="@+id/left"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="left"/>
+
+        <Button
+            android:id="@+id/right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="right"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:id="@+id/setImgButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="set img"/>
+
+        <Button
+            android:id="@+id/setVidButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="set vid"/>
+
+        <Button
+            android:id="@+id/preImgButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="preview img"/>
+
+        <Button
+            android:id="@+id/preVidButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="preview vid"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:id="@+id/planRun"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="planRun"/>
+
+        <Button
+            android:id="@+id/planRunStop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="planRunStop"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Type"/>
+            <EditText
+                android:id="@+id/pathType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PathPlanning"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Action"/>
+            <EditText
+                android:id="@+id/pathAction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="angle"/>
+            <EditText
+                android:id="@+id/pathAngle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="url"/>
+            <EditText
+                android:id="@+id/pathUrl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="rotation"/>
+            <EditText
+                android:id="@+id/pathRotation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="time"/>
+            <EditText
+                android:id="@+id/pathTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                />
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+
+</LinearLayout>

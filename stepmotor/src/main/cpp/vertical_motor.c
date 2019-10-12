@@ -12,8 +12,6 @@
 #include <stdbool.h>
 #include <android/log.h>
 
-#define MOTOR_DRV_UP_DOWN    "/dev/motor_gpio_up_down"
-
 
 #define  LOG_TAG    "vertical_motor"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -25,13 +23,18 @@ static int vMotorFd = -1;
 static struct timeval tv;
 static struct timeval ts;
 
-bool bVerticalMotorEnable = false;
+
 int gVDelay = 2000;
 int gVDirection = 0;
 
-int controlVerticalMotor(int steps, int dir, int delay) {
+extern int motor_down_pi_state;
+extern int motor_up_pi_state;
 
-    LOGD("controlHorizontalMotor step: %d, direction: %d, delay %d", steps, dir, delay);
+
+int controlVerticalMotor(int steps, int dir, int delay, bool bCheckLimitSwitch) {
+
+    LOGD("controlVerticalMotor step: %d, direction: %d, delay %d", steps, dir, delay);
+    LOGD("controlVerticalMotor motor_down_pi_state: %d, motor_up_pi_state: %d", motor_down_pi_state, motor_up_pi_state);
 
     vMotorFd = open(MOTOR_DRV_UP_DOWN, O_RDWR);
     if(vMotorFd == -1)
@@ -49,18 +52,27 @@ int controlVerticalMotor(int steps, int dir, int delay) {
     int gpioLevel = 0;
     controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
     while (steps--) {
-
-        if (dir == MOTRO_DIRECTION_DOWN) {
-            if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_1, 0) == 1) {
-                LOGE("Reach down pi");
-                break;
-            }
-
-        }
-        else if (dir == MOTOR_DIRECTION_UP){
+  //      LOGE(" step --");
+        if (bCheckLimitSwitch == true) {
             if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
-                LOGE("Reach up pi");
-                break;
+                LOGE("reach up/down pi");
+                if (dir == MOTOR_DIRECTION_UP) {
+                    if (motor_down_pi_state == 0) {
+                        LOGE("reach up pi");
+                        motor_up_pi_state = 1;
+                        break;
+                    }
+                } else if (dir == MOTOR_DIRECTION_DOWN) {
+                    if (motor_up_pi_state == 0) {
+                        LOGE("reach down pi");
+                        motor_down_pi_state = 1;
+                        break;
+                    }
+                }
+            } else {
+                //          LOGE(" unset pi state");
+                motor_up_pi_state = 0;
+                motor_down_pi_state = 0;
             }
         }
 
@@ -106,7 +118,7 @@ int getVerticalMotorDirection() {
     return gVDirection;
 }
 
-int startVMotorRunning() {
+int startVMotorRunning(bool bCheckLimitSwitch) {
      if (vMotorFd == -1) {
         vMotorFd = open(MOTOR_DRV_UP_DOWN, O_RDWR);
         if(vMotorFd == -1)
@@ -129,18 +141,32 @@ int startVMotorRunning() {
      controlMotorDev(vMotorFd, MOTO_STEP_UP_DOWN, gpioLevel);
 
      while (true) {
-
-         if (dir == MOTRO_DIRECTION_DOWN) {
-             if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_1, 0) == 1) {
-                 LOGE("Reach down pi");
-                 continue;
-             }
-
-         }
-         else if (dir == MOTOR_DIRECTION_UP){
+         if (bCheckLimitSwitch) {
              if(getPiState(vMotorFd, MOTO_SENSOR_UP_DOWN_2, 0) == 1) {
-                 LOGE("Reach up pi");
-                 continue;
+                 if (dir == MOTOR_DIRECTION_UP) {
+                     if (motor_down_pi_state == 0) {
+                         motor_up_pi_state = 1;
+
+                         if (bVerticalMotorEnable == false) {
+                             break;
+                         }
+
+                         continue;
+                     }
+                 } else if (dir == MOTOR_DIRECTION_DOWN) {
+                     if (motor_up_pi_state == 0) {
+                         motor_down_pi_state = 1;
+
+                         if (bVerticalMotorEnable == false) {
+                             break;
+                         }
+
+                         continue;
+                     }
+                 }
+             } else {
+                 motor_up_pi_state = 0;
+                 motor_down_pi_state = 0;
              }
          }
 

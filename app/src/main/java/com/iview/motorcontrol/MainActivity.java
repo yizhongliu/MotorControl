@@ -9,6 +9,7 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 
 import com.iview.stepmotor.MotorControl;
 
@@ -24,6 +25,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Button button3;
     Button button4;
     Button button5;
+
+    Button projectorSwitchButton;
+
+
+    EditText hStepsEdit;
+    EditText vStepsEdit;
+    EditText hDirEdit;
+    EditText vDirEdit;
+    EditText delayEdit;
+    Button multiConfirmButton;
 
     HandlerThread mHandlerThread;
     Handler mHandler;
@@ -60,6 +71,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         button5 = findViewById(R.id.button5);
         button5.setOnClickListener(this);
+
+        projectorSwitchButton = findViewById(R.id.projectorSwitch);
+        projectorSwitchButton.setOnClickListener(this);
+
+        vStepsEdit = findViewById(R.id.vStepEdit);
+        hStepsEdit = findViewById(R.id.hStepEdit);
+        hDirEdit = findViewById(R.id.hDirEdit);
+        vDirEdit = findViewById(R.id.vDirEdit);
+        delayEdit = findViewById(R.id.delayEdit);
+
+        multiConfirmButton = findViewById(R.id.multiConfirm);
+        multiConfirmButton.setOnClickListener(this);
     }
 
     private void initMotorData() {
@@ -182,13 +205,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.button1:
-                MotorControl.controlMotor(MotorControl.HMotor, 1000, 1, 2000);
+                MotorControl.controlMotor(MotorControl.HMotor, 10000, 1, 500);
                 break;
             case R.id.button2:
-                MotorControl.controlMotor(MotorControl.HMotor,1000, 0, 2000);
+                MotorControl.controlMotor(MotorControl.HMotor,10000, 0, 500);
                 break;
             case R.id.button3:
-                MotorControl.controlMotor(MotorControl.VMotor,200, 1, 2000 );
+                MotorControl.controlMotor(MotorControl.VMotor,10000, 1, 1000 );
           //      MotorControl.controlMotor(MotorControl.VMotor, 3000, 1, 500);
 //                cmdIndex = 0;
 //                MotorControl.setMotorSpeed(MotorControl.VMotor, 500);
@@ -205,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                cmdIndex++;
                 break;
             case R.id.button4:
-                MotorControl.controlMotor(MotorControl.VMotor,200, 0, 2000 );
+                MotorControl.controlMotor(MotorControl.VMotor,10000, 0, 1000 );
                 //MotorControl.controlMotor(MotorControl.VMotor, 3000, 0, 500);
 //                cmdIndex = 0;
 //                MotorControl.setMotorSpeed(MotorControl.HMotor, 500);
@@ -251,7 +274,63 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mHandler.sendEmptyMessageDelayed(MSG_CONTROL_D_MOTOR, 0);
 
                 break;
+
+            case R.id.projectorSwitch:
+                MotorControl.swtichProjector(0);
+
+                mHandler.postDelayed((new Runnable() {
+                    @Override
+                    public void run() {
+                        MotorControl.swtichProjector(1);
+                    }
+                }), 4000);
+                break;
+
+            case R.id.multiConfirm:
+                int hSteps = Integer.parseInt(hStepsEdit.getText().toString());
+                int vSteps = Integer.parseInt(vStepsEdit.getText().toString());
+                int hDir = Integer.parseInt(hDirEdit.getText().toString());
+                int vDir = Integer.parseInt(vDirEdit.getText().toString());
+                int delay = Integer.parseInt(delayEdit.getText().toString());
+
+                controlMultiMotor2(hSteps, vSteps, hDir, vDir, delay);
+                break;
         }
+    }
+
+    public int controlMultiMotor2(final int hSteps, final int vSteps, final int hDir, final int vDir, final int delay) {
+
+        if (hSteps == 0 && vSteps == 0) {
+            Log.e(TAG, "hStep and vStep can't be 0");
+        }
+
+        if (hSteps == 0) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MotorControl.controlMotor(MotorControl.VMotor, vSteps, vDir, delay);
+               //     UnityPlayer.UnitySendMessage(unityPacakage, unityMethod, "controlMultiMotor2");
+                }
+            }).start();
+        } else if (vSteps == 0) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MotorControl.controlMotor(MotorControl.HMotor, hSteps, hDir, delay);
+             //       UnityPlayer.UnitySendMessage(unityPacakage, unityMethod, "controlMultiMotor2");
+                }
+            }).start();
+        } else {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MotorControl.controlMultiMotors(hSteps, vSteps, hDir, vDir, delay);
+             //       UnityPlayer.UnitySendMessage(unityPacakage, unityMethod, "controlMultiMotor2");
+                }
+            }).start();
+        }
+
+        return 0;
     }
 
     public class MotorData {

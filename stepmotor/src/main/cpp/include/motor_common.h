@@ -12,6 +12,9 @@ struct motor_a3901{
 #define VS_GET_GPIO   		 _IOWR(MOTOR_MAGIC, 0x1, struct motor_a3901)
 #define VS_SET_MOTOR_ENABLE  _IOWR(MOTOR_MAGIC, 0x2, struct motor_a3901)
 
+#define MOTOR_DRV_LEFT_RIGHT     "/dev/motor_gpio_left_right"
+#define MOTOR_DRV_UP_DOWN    "/dev/motor_gpio_up_down"
+
 #define MOTO_ENABLE_AF    120
 #define MOTO_STEP_AF 		123
 #define MOTO_DIR_AF 		122
@@ -61,19 +64,24 @@ struct motor_a3901{
 #define MOTOR_DIRECTION_LEFT 1
 #define MOTOR_DIRECTION_RIGHT 0
 #define MOTOR_DIRECTION_UP 1
-#define MOTRO_DIRECTION_DOWN 0
+#define MOTOR_DIRECTION_DOWN 0
 
-int controlHorizontalMotor(int steps, int dir, int delay);
+
+
+static bool bHorizontalMotorEnable = false;
+static bool bVerticalMotorEnable = false;
+
+int controlHorizontalMotor(int steps, int dir, int delay, bool bCheckLimitSwitch);
 int setHorizontalMotorSpeed(int delay);
 int setHorizontalMotorDirection(int direction);
-int startHMotorRunning();
+int startHMotorRunning(bool bCheckLimitSwitch);
 int stopHMotorRunning();
 bool getHMotorEnable();
 
-int controlVerticalMotor(int steps, int dir, int delay);
+int controlVerticalMotor(int steps, int dir, int delay, bool bCheckLimitSwitch);
 int setVerticalMotorSpeed(int delay);
 int setVerticalMotorDirection(int direction);
-int startVMotorRunning();
+int startVMotorRunning(bool bCheckLimitSwitch);
 int stopVMotorRunning();
 bool getVMotorEnable();
 
@@ -81,4 +89,7 @@ int controlMotorDev(int fd, int gpio_num, int gpio_state);
 int getPiState(int fd, int gpio_num, int gpio_state);
 void motorDelay(int delay);
 
+
+void controlMultipleMotors(int hSteps, int vSteps, int hDir, int vDir, int delay, bool bCheckLimitSwitch);
+void stopMultipleMotors();
 #endif
