@@ -240,6 +240,7 @@ void NEFFmpeg::start() {
         audioChannel->start();
     }
     pthread_create(&pid_start, 0, task_start, this);
+    bPidStart = true;
 }
 
 /**
@@ -378,7 +379,11 @@ void NEFFmpeg::stop() {
 //    ffmpeg->_prepare();
 
     LOGE("before pid_prepare %s", __FUNCTION__);
-    pthread_join(pid_start, 0);
+    if (bPidStart) {
+        pthread_join(pid_start, 0);
+        bPidStart = false;
+    }
+
 
     //  av_usleep(100000);
 

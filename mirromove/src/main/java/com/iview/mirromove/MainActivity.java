@@ -32,6 +32,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -194,8 +195,40 @@ public class MainActivity extends Activity {
 
         mPlayer.setOnErrorListener(new NativePlayer.OnErrorListener() {
             @Override
-            public void onError(int errorCode) {
+            public void onError(final int errorCode) {
+                Log.e(TAG, "onError :" + errorCode);
+                switch (errorCode) {
+                    case NativePlayer.FFMPEG_FIND_DECODER_FAIL:
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast toast = Toast.makeText(MainActivity.this, R.string.find_decoder_fail, Toast.LENGTH_LONG);
+                                LinearLayout layout = (LinearLayout) toast.getView();
+                                TextView tv = (TextView) layout.getChildAt(0);
+                                tv.setTextSize(45);
 
+                                toast.setText(R.string.find_decoder_fail);
+                                toast.show();
+
+                            }
+                        });
+                        break;
+                    default:
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast toast = Toast.makeText(MainActivity.this, R.string.find_decoder_fail, Toast.LENGTH_LONG);
+                                LinearLayout layout = (LinearLayout) toast.getView();
+                                TextView tv = (TextView) layout.getChildAt(0);
+                                tv.setTextSize(45);
+
+                                toast.setText("play error code :" + errorCode);
+                                toast.show();
+
+                            }
+                        });
+                        break;
+                }
             }
         });
 

@@ -45,6 +45,9 @@ private:
     pthread_t pid_prepare;
     pthread_t pid_start;
     pthread_t pid_stop;
+
+    bool bPidStart = false;
+
     bool isPlaying;
     AVFormatContext *formatContext = 0;
     RenderCallback renderCallback;

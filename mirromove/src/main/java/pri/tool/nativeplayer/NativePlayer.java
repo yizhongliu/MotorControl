@@ -14,9 +14,9 @@ public class NativePlayer {
     }
 
     //准备过程错误码
-    public static final int ERROR_CODE_FFMPEG_PREPARE = 1000;
+    public static final int ERROR_CODE_FFMPEG_PREPARE = -1000;
     //播放过程错误码
-    public static final int ERROR_CODE_FFMPEG_PLAY = 2000;
+    public static final int ERROR_CODE_FFMPEG_PLAY = -2000;
 
     //打不开视频
     public static final int FFMPEG_CAN_NOT_OPEN_URL = (ERROR_CODE_FFMPEG_PREPARE - 1);
