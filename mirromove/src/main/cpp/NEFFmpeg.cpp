@@ -137,6 +137,7 @@ void NEFFmpeg::_prepare() {
         AVStream *stream = formatContext->streams[i];
         //4获取编解码这段流的参数
         AVCodecParameters *codecParameters = stream->codecpar;
+        LOGE("解码 id ：%d, type: %d", codecParameters->codec_id, codecParameters->codec_type);
         //5 通过参数中的id（编解码的方式），来查找当前流的解码器
         AVCodec *codec = avcodec_find_decoder(codecParameters->codec_id);
         if (!codec) {
@@ -145,7 +146,8 @@ void NEFFmpeg::_prepare() {
             if (javaCallHelper) {
                 javaCallHelper->onError(THREAD_CHILD, FFMPEG_FIND_DECODER_FAIL);
             }
-            return;
+            //return;
+            continue;
         }
         //6 创建解码器上下文
         AVCodecContext *codecContext = avcodec_alloc_context3(codec);
