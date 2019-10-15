@@ -70,27 +70,48 @@ public class HttpServerImpl extends NanoHTTPD {
     @Override
     public Response serve(IHTTPSession session) {
         String strUri = session.getUri();
-        String method = session.getMethod().name();
+        Method method = session.getMethod();
 
-        Log.e(TAG,"Response serve uri = " + strUri + ", method = " + method);
+        Log.e(TAG,"Response serve uri = " + strUri + ", method = " + method.name());
         Log.e(TAG, "getInputStream:" + session.getInputStream().toString() + ", head:" + session.getHeaders().toString() + ", getParam" + session.getParms().toString() + ", queryString" + session.getQueryParameterString());
 
         String absPath = mBasePath + strUri;
         File file = new File(absPath);
 
-
-
         if (Method.POST.equals(method) || Method.PUT.equals(method)) {
+
+            Log.e(TAG, "get post method");
             Map<String, String> files = new HashMap<>();
             try {
                 session.parseBody(files);
             } catch (IOException ioe) {
+                Log.e(TAG, "return io exception");
                 return newFixedLengthResponse("Internal Error IO Exception: " + ioe.getMessage());
             } catch (ResponseException re) {
+                Log.e(TAG, "return resopn Exception");
                 return newFixedLengthResponse(re.getStatus(), MIME_PLAINTEXT, re.getMessage());
             }
 
-        } else {
+            Map<String, String> params = session.getParms();
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                final String paramsKey = entry.getKey();
+                Log.e(TAG, "get paramKey :" + paramsKey + ",value" + entry.getValue());
+                if (paramsKey.contains("filename_1")) {
+                    final String tmpFilePath = files.get(paramsKey);
+                    Log.e(TAG, "tmpFilePath:" + tmpFilePath);
+                    final String fileName = entry.getValue();
+                    final File tmpFile = new File(tmpFilePath);
+                    final File targetFile = new File(mBasePath + "/" + fileName);
+                    Log.e(TAG, "copy file now, source file path: " + tmpFile.getAbsoluteFile() + ",target file path:" +  targetFile.getAbsoluteFile());
+                    //a copy file methoed just what you like
+                    FileUtils.copyFile(tmpFile, targetFile);
+
+                    //maybe you should put the follow code out
+                    return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "text/html", "Success");
+                }
+            }
+
+        } else if (Method.GET.equals(method)){
             String resize = session.getHeaders().get("resize");
             if (resize != null) {
                 try {
