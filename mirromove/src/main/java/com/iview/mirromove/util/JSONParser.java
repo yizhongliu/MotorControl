@@ -116,4 +116,20 @@ public class JSONParser {
         return keystone;
     }
 
+    public String getPathName() {
+        String pathName = null;
+
+        JSONObject jsonObject = null;
+        if (mJsonObject != null) {
+            try {
+                jsonObject = mJsonObject .getJSONObject("arg");
+                pathName = jsonObject.optString("pathName");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return pathName;
+    }
+
 }

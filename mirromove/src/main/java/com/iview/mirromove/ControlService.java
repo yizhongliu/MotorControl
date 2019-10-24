@@ -39,6 +39,7 @@ public class ControlService extends Service {
     private final static int MSG_PATH_PLAN_RUN = 5;
     private final static int MSG_PATH_PLAN_EXECUTE = 6;
     private final static int MSG_PATH_PLAN_RUN_STOP = 7;
+    private final static int MSG_PATH_PLAN_CANCEL = 8;
 
     private final static int MSG_CONTROL_SHOW = 20;
     private final static int MSG_CONTROL_MOVE = 21;
@@ -63,11 +64,15 @@ public class ControlService extends Service {
 
     private MessageReceiver mMessageReceiver;
 
+    private String runMessage;
+
     private ArrayList<PathPlanning> pathPlanningList = new ArrayList<>();
     private ArrayList<PathPlanning> execPathPlanningList = new ArrayList<>();
 
     private HandlerThread mHandlerThread;
     private Handler mHandler;
+
+    private MirroApplication mirroApplication;
 
 
     private boolean bMotorReset = false;
@@ -99,6 +104,7 @@ public class ControlService extends Service {
         super.onCreate();
         init();
 
+        mirroApplication = (MirroApplication) getApplication();
         registerBroadcastReceive();
     }
 
@@ -130,7 +136,7 @@ public class ControlService extends Service {
                     case MSG_PATH_PLAN_START:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_START");
                         bPathPlanning = true;
-
+                        mirroApplication.setRunningState(MirroApplication.PATH_PLANNING_STATE);
                         cmdIndex = 0;
                         HandlePathPlanningStart();
 
@@ -160,57 +166,39 @@ public class ControlService extends Service {
                     case MSG_PATH_PLAN_PREVIEW:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_PREVIEW");
                         String preMessage = msg.getData().getString("message");
+
                         HandlePathPlanningPreview(preMessage);
                         break;
                     case MSG_PATH_PLAN_STOP:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_STOP");
+                        String stopMessage = msg.getData().getString("message");
+                        Log.e(TAG, " get stopMessage:" + stopMessage);
+
                         bPathPlanning = false;
-                        try {
-                            CommandListProvider.getInstance(ControlService.this).saveCmdList(pathPlanningList);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        mirroApplication.setRunningState(MirroApplication.CONTROL_STATE);
+                        HandlePathPlanningStop(stopMessage);
+                        break;
+                    case MSG_PATH_PLAN_CANCEL:
+                        Log.e(TAG, "handle message MSG_PATH_PLAN_CANCEL");
+                        mirroApplication.setRunningState(MirroApplication.CONTROL_STATE);
+
+                        bPathPlanning = false;
                         break;
                     case MSG_AUTORUNNING_START:
                     case MSG_PATH_PLAN_RUN:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_RUN2");
+                        String startMessage = msg.getData().getString("message");
 
-                        try {
-                            Log.e(TAG, "get list");
-                            execPathPlanningList = CommandListProvider.getInstance(ControlService.this).loadCmdList();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            return;
-                        }
+                        runMessage = startMessage;
 
-                        if (playCallBack != null) {
-                            playCallBack.autoRunStart();
-                            playCallBack.stop();
-                        }
-
-                        if (!execPathPlanningList.isEmpty()) {
-                            bPathPlanRunning = true;
-                            cmdIndex = 0;
-                        }
-
-                        if (playCallBack != null) {
-                            playCallBack.autoRunStart();
-                        }
-
-                        Log.e(TAG, "receiveCount:" + receiveCount + ", saveCount:" + saveCount + ", ListSize:" + execPathPlanningList.size());
-                   //     MotorControl.swtichProjector(MotorControl.PROJECTOR_OFF);
-
-                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 30, true);
-                        MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 60, true);
-
-                        mHandler.sendEmptyMessage(MSG_PATH_PLAN_EXECUTE);
-
+                        HandleAutoRunningStart(startMessage);
                         break;
                     case MSG_AUTORUNNING_STOP:
                     case MSG_PATH_PLAN_RUN_STOP:
                         Log.e(TAG, "handle message MSG_PATH_PLAN_RUN_STOP");
                  //       MotorControl.swtichProjector(MotorControl.PROJECTOR_ON);
                         bPathPlanRunning = false;
+                        mirroApplication.setRunningState(MirroApplication.CONTROL_STATE);
 
                         if (playCallBack != null) {
                             playCallBack.autoRunStop();
@@ -255,7 +243,14 @@ public class ControlService extends Service {
 
                                 cmdIndex++;
                             } else {
-                                mHandler.sendEmptyMessage(MSG_PATH_PLAN_RUN);
+
+                                Message showMessage = new Message();
+                                showMessage.what = MSG_PATH_PLAN_RUN;
+                                Bundle bundle = new Bundle();
+                                bundle.putString("message" , runMessage);
+                                showMessage.setData(bundle);
+                                mHandler.sendMessage(showMessage);
+
                             }
                         }
                         break;
@@ -343,8 +338,17 @@ public class ControlService extends Service {
                     }
                     if (action.equals(MsgType.ACTION_START)) {
                         mHandler.sendEmptyMessage(MSG_PATH_PLAN_START);
+
                     } else if (action.equals(MsgType.ACTION_STOP)) {
-                        mHandler.sendEmptyMessage(MSG_PATH_PLAN_STOP);
+                  //      mHandler.sendEmptyMessage(MSG_PATH_PLAN_STOP);
+
+                        Message showMessage = new Message();
+                        showMessage.what = MSG_PATH_PLAN_STOP;
+                        Bundle bundle = new Bundle();
+                        bundle.putString("message" , messge);
+                        showMessage.setData(bundle);
+
+                        mHandler.sendMessage(showMessage);
                     } else if (action.equals(MsgType.ACTION_MOVE)) {
 
                         mHandler.removeMessages(MSG_PATH_PLAN_MOVE);
@@ -391,6 +395,8 @@ public class ControlService extends Service {
                         bundle.putString("message" , messge);
                         showMessage.setData(bundle);
                         mHandler.sendMessage(showMessage);
+                    } else if (action.equals(MsgType.ACTION_CANCEL)) {
+                        mHandler.sendEmptyMessage(MSG_PATH_PLAN_CANCEL);
                     }
                 }
 
@@ -402,10 +408,16 @@ public class ControlService extends Service {
                     }
 
                     if (action.equals(MsgType.ACTION_START)) {
+
+                        if (bPathPlanRunning) {
+                            Log.e(TAG, "Device is running");
+                            return;
+                        }
                         Message runMessage = new Message();
                         runMessage.what = MSG_AUTORUNNING_START;
                         Bundle bundle = new Bundle();
                         bundle.putString("message" , messge);
+
                         runMessage.setData(bundle);
                         mHandler.sendMessage(runMessage);
                     } else if (action.equals(MsgType.ACTION_STOP)) {
@@ -456,7 +468,35 @@ public class ControlService extends Service {
             pathPlanningList.add(pathPlanning);
             Log.e(TAG, "add pathPlanningList :" + "lissize:" + pathPlanningList.size() + ", saveCount:" + saveCount);
         }
+    }
 
+    private void HandlePathPlanningStop(String message) {
+        JSONParser jsonParser = new JSONParser(message);
+        String pathName = jsonParser.getPathName();
+
+        if (pathName != null) {
+            try {
+                boolean bPathExit = false;
+                ArrayList<String> pathlist = CommandListProvider.getInstance(ControlService.this).loadPathList();
+                if (!pathlist.isEmpty()) {
+                    for(String c : pathlist) {
+                        if (c.equals(pathName)) {
+                            bPathExit = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (bPathExit == false) {
+                    pathlist.add(pathName);
+                    CommandListProvider.getInstance(ControlService.this).savePathList(pathlist);
+                }
+
+                CommandListProvider.getInstance(ControlService.this).saveCmdList(pathPlanningList, pathName);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void HandlePathPlanningShow(String message) {
@@ -497,6 +537,48 @@ public class ControlService extends Service {
 
         if (playCallBack != null) {
             playCallBack.setParam(rotation);
+        }
+    }
+
+    private void HandleAutoRunningStart(String message) {
+        JSONParser jsonParser = new JSONParser(message);
+        String pathName = jsonParser.getPathName();
+
+        if (pathName != null) {
+            try {
+                Log.e(TAG, "get list");
+                execPathPlanningList = CommandListProvider.getInstance(ControlService.this).loadCmdList(pathName);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return;
+            }
+
+            if (playCallBack != null) {
+                playCallBack.autoRunStart();
+                playCallBack.stop();
+            }
+
+            if (!execPathPlanningList.isEmpty()) {
+                bPathPlanRunning = true;
+                mirroApplication.setRunningState(MirroApplication.AUTO_RUNNING_STATE);
+                mirroApplication.setRunningPath(pathName);
+                cmdIndex = 0;
+            } else {
+                Log.e(TAG, "Do not contain any cmd");
+                return;
+            }
+
+            if (playCallBack != null) {
+                playCallBack.autoRunStart();
+            }
+
+            Log.e(TAG, "receiveCount:" + receiveCount + ", saveCount:" + saveCount + ", ListSize:" + execPathPlanningList.size());
+            //     MotorControl.swtichProjector(MotorControl.PROJECTOR_OFF);
+
+            MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.HMotor, 1000000, MotorControlHelper.HMotorLeftDirection, 30, true);
+            MotorControlHelper.getInstance(ControlService.this).controlMotor(MotorControlHelper.VMotor, 1000000, MotorControlHelper.VMotorUpDirection, 60, true);
+
+            mHandler.sendEmptyMessage(MSG_PATH_PLAN_EXECUTE);
         }
     }
 

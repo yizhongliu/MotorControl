@@ -324,7 +324,7 @@ public class MainActivity extends Activity {
 
             if (httpServer == null) {
                 String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/httpserver";
-                httpServer = new HttpServerImpl(path);
+                httpServer = new HttpServerImpl(path, MainActivity.this);
             }
             try {
                 httpServer.start();

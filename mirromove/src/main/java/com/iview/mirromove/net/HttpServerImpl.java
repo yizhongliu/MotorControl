@@ -1,5 +1,6 @@
 package com.iview.mirromove.net;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageDecoder;
@@ -13,10 +14,14 @@ import android.widget.ImageView;
 
 import androidx.annotation.RequiresApi;
 
+import com.iview.mirromove.ControlService;
+import com.iview.mirromove.MirroApplication;
+import com.iview.mirromove.util.CommandListProvider;
 import com.iview.mirromove.util.FileUtils;
 import com.iview.mirromove.util.MediaFileUtil;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
@@ -27,6 +32,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,12 +64,19 @@ public class HttpServerImpl extends NanoHTTPD {
     private static final String REQUEST_ACTION_GET_FILE_LIST = "/getFileList";
     private static final String REQUEST_ACTION_SAMPLE = "/sample";
 
-    private String mBasePath;
+    private static final String GET_PATH_LIST = "/getPathlist";
+    private static final String DEL_PATH_LIST = "/delPathlist";
+    private static final String GET_DEV_STATE = "/getDeviceState";
 
-    public HttpServerImpl(String basePath) {
+    private String mBasePath;
+    private Context mContext;
+
+    public HttpServerImpl(String basePath, Context context) {
         super(DEFAULT_SERVER_PORT);
 
         mBasePath = basePath;
+
+        mContext = context.getApplicationContext();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -80,65 +93,76 @@ public class HttpServerImpl extends NanoHTTPD {
 
         if (Method.POST.equals(method) || Method.PUT.equals(method)) {
 
-            Log.e(TAG, "get post method");
-            Map<String, String> files = new HashMap<>();
-            try {
-                session.parseBody(files);
-            } catch (IOException ioe) {
-                Log.e(TAG, "return io exception");
-                return newFixedLengthResponse("Internal Error IO Exception: " + ioe.getMessage());
-            } catch (ResponseException re) {
-                Log.e(TAG, "return resopn Exception");
-                return newFixedLengthResponse(re.getStatus(), MIME_PLAINTEXT, re.getMessage());
-            }
+            if (DEL_PATH_LIST.equals(strUri)) {
+                return responseDelPathlist(session);
+            } else {
+                Log.e(TAG, "get post method");
+                Map<String, String> files = new HashMap<>();
+                try {
+                    session.parseBody(files);
+                } catch (IOException ioe) {
+                    Log.e(TAG, "return io exception");
+                    return newFixedLengthResponse("Internal Error IO Exception: " + ioe.getMessage());
+                } catch (ResponseException re) {
+                    Log.e(TAG, "return resopn Exception");
+                    return newFixedLengthResponse(re.getStatus(), MIME_PLAINTEXT, re.getMessage());
+                }
 
-            Map<String, String> params = session.getParms();
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                final String paramsKey = entry.getKey();
-                Log.e(TAG, "get paramKey :" + paramsKey + ",value" + entry.getValue());
-                if (paramsKey.contains("filename_1")) {
-                    final String tmpFilePath = files.get(paramsKey);
-                    Log.e(TAG, "tmpFilePath:" + tmpFilePath);
-                    final String fileName = entry.getValue();
-                    final File tmpFile = new File(tmpFilePath);
-                    final File targetFile = new File(mBasePath + "/" + fileName);
-                    Log.e(TAG, "copy file now, source file path: " + tmpFile.getAbsoluteFile() + ",target file path:" +  targetFile.getAbsoluteFile());
-                    //a copy file methoed just what you like
-                    FileUtils.copyFile(tmpFile, targetFile);
+                Map<String, String> params = session.getParms();
+                for (Map.Entry<String, String> entry : params.entrySet()) {
+                    final String paramsKey = entry.getKey();
+                    Log.e(TAG, "get paramKey :" + paramsKey + ",value" + entry.getValue());
+                    if (paramsKey.contains("filename_1")) {
+                        final String tmpFilePath = files.get(paramsKey);
+                        Log.e(TAG, "tmpFilePath:" + tmpFilePath);
+                        final String fileName = entry.getValue();
+                        final File tmpFile = new File(tmpFilePath);
+                        final File targetFile = new File(mBasePath + "/" + fileName);
+                        Log.e(TAG, "copy file now, source file path: " + tmpFile.getAbsoluteFile() + ",target file path:" +  targetFile.getAbsoluteFile());
+                        //a copy file methoed just what you like
+                        FileUtils.copyFile(tmpFile, targetFile);
 
-                    //maybe you should put the follow code out
-                    return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "text/html", "Success");
+                        //maybe you should put the follow code out
+                        return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "text/html", "Success");
+                    }
                 }
             }
 
         } else if (Method.GET.equals(method)){
-            String resize = session.getHeaders().get("resize");
-            if (resize != null) {
-                try {
-                    String[] size = resize.split(",");
-                    int width = Integer.parseInt(size[0]);
-                    int height = Integer.parseInt(size[1]);
+            if (GET_PATH_LIST.equals(strUri)) {
+                return responsePathlist(session);
+            } else if (GET_DEV_STATE.equals(strUri)) {
+                return responseGetDevState(session);
+            } else {
+                String resize = session.getHeaders().get("resize");
+                if (resize != null) {
+                    try {
+                        String[] size = resize.split(",");
+                        int width = Integer.parseInt(size[0]);
+                        int height = Integer.parseInt(size[1]);
+
+                        if (file.exists()) {
+                            if (file.isDirectory()) {
+                                return responseFileList(session, absPath);
+                            } else {
+                                return responseThumbnailFileStream(session, absPath, width, height);
+                            }
+                        }
+                    } catch (NumberFormatException e) {
+                        e.printStackTrace();
+                    }
+                } else {
 
                     if (file.exists()) {
                         if (file.isDirectory()) {
                             return responseFileList(session, absPath);
                         } else {
-                            return responseThumbnailFileStream(session, absPath, width, height);
+                            return responseFileStream(session,absPath);
                         }
-                    }
-                } catch (NumberFormatException e) {
-                    e.printStackTrace();
-                }
-            } else {
-
-                if (file.exists()) {
-                    if (file.isDirectory()) {
-                        return responseFileList(session, absPath);
-                    } else {
-                        return responseFileStream(session,absPath);
                     }
                 }
             }
+
         }
 
 
@@ -271,6 +295,7 @@ public class HttpServerImpl extends NanoHTTPD {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        Log.e(TAG, "responseFileList:" + jsonObject.toString());
 
         return newFixedLengthResponse(jsonObject.toString());
     }
@@ -289,6 +314,103 @@ public class HttpServerImpl extends NanoHTTPD {
         return newFixedLengthResponse(builder.toString());
     }
 
+    private Response responsePathlist(IHTTPSession session) {
+
+        Log.e(TAG, "responsePathlist");
+        try {
+            ArrayList<String> pathlist = CommandListProvider.getInstance(MirroApplication.getContext()).loadPathList();
+
+            JSONObject jsonObject = new JSONObject();
+            JSONArray fileArray = new JSONArray();
+            for(String path : pathlist){
+                //     sb.append("<a href=" + REQUEST_ACTION_GET_FILE + "?fileName=" + filePath + ">" + filePath + "</a>" + "<br>");
+                fileArray.put(path);
+            }
+
+            jsonObject.put("pathlist", fileArray);
+
+            Log.e(TAG, "response pathlist:" + jsonObject.toString());
+
+            return newFixedLengthResponse(jsonObject.toString());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return newFixedLengthResponse(NanoHTTPD.Response.Status.NO_CONTENT, "text/html", "Fail");
+    }
+
+    private Response responseDelPathlist(IHTTPSession session) {
+        Map<String, String> files = new HashMap<String, String>();
+
+        try {
+            session.parseBody(files);
+            Log.e(TAG, "files:" +files.toString() + ", ffiles.size:" + files.size());
+            String body = files.get("postData");
+
+
+            if (body != null) {
+                ArrayList<String> pathlist = CommandListProvider.getInstance(MirroApplication.getContext()).loadPathList();
+                ArrayList<String> paths = new ArrayList<String>();
+
+                JSONObject jSONObject = new JSONObject(body);
+                JSONArray jsonArray = jSONObject.getJSONArray("pathlist");
+
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    paths.add(jsonArray.get(i).toString());
+                }
+
+                for (String path : paths) {
+                    CommandListProvider.getInstance(MirroApplication.getContext()).deleteCmdfile(path + ".json");
+                }
+
+                pathlist.removeAll(paths);
+
+                CommandListProvider.getInstance(MirroApplication.getContext()).savePathList(pathlist);
+
+                return responsePathlist(session);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ResponseException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return response404(session);
+    }
+
+    private Response responseGetDevState(IHTTPSession session) {
+        int runningState = ((MirroApplication) mContext).getRunningState();
+        String state = null;
+        switch (runningState) {
+            case MirroApplication.CONTROL_STATE:
+                state = "control";
+                break;
+            case MirroApplication.AUTO_RUNNING_STATE:
+                state = "autorunning";
+                break;
+            case MirroApplication.PATH_PLANNING_STATE:
+                state = "pathplanning";
+                break;
+        }
+
+        String pathName = ((MirroApplication)mContext).getRunningPath();
+
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("RunningState", state);
+            jsonObject.put("PathName", pathName);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", jsonObject.toString());
+    }
+
     /**
      * 返回给调用端json字符串
      * @return
@@ -298,4 +420,3 @@ public class HttpServerImpl extends NanoHTTPD {
     }
 
 }
-

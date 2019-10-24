@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MirroMove</string>
+    <string name="app_name">Mirror Projector</string>
     <string name="network_unavailable">Network is not available</string>
     <string name="find_decoder_fail">Find decoder fail</string>
 </resources>
