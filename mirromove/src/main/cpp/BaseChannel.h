@@ -67,11 +67,15 @@ public:
 
     virtual void stop() = 0;
 
+    virtual void pause() = 0;
+
 
     SafeQueue<AVPacket *> packets;
     SafeQueue<AVFrame *> frames;
     int id;
     bool isPlaying = 0;
+
+    int renderState = PLAYER_STATE_STOP;
     //解码器上下文
     AVCodecContext *codecContext;
     AVRational time_base;

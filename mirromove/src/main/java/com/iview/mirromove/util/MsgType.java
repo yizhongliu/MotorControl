@@ -17,6 +17,8 @@ public class MsgType {
     public final static String ACTION_RUN_STOP = "RunStop";
     public final static String ACTION_SET_PARAM = "SetParam";
     public final static String ACTION_CANCEL = "Cancel";
+    public final static String ACTION_PLAYER_PAUSE = "Pause";
+    public final static String ACTION_PLAYER_Play = "Play";
 
 
     public final static String INTENT_ACTION_MEDIA = "com.iview.mirromove.INTENT_ACTION_MEDIA";

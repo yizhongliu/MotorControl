@@ -139,6 +139,8 @@ public class NativePlayer {
         stopNative();
     }
 
+    public void pause() {pauseNative();}
+
     /**
      * 获取总的播放时长
      * @return
@@ -191,6 +193,7 @@ public class NativePlayer {
 
     private native void startNative();
     private native void stopNative();
+    private native void pauseNative();
     private native void releaseNative();
     private native int getDurationNative();
     private native void seekToNative(int playProgress);

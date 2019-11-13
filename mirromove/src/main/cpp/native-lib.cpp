@@ -116,6 +116,15 @@ Java_pri_tool_nativeplayer_NativePlayer_stopNative(JNIEnv *env, jobject thiz) {
 
     DELETE(ffmpeg);
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_pri_tool_nativeplayer_NativePlayer_pauseNative(JNIEnv *env, jobject thiz) {
+    if (ffmpeg) {
+        ffmpeg->pause();
+    }
+}
+
 extern "C"
 JNIEXPORT jint JNICALL
 Java_pri_tool_nativeplayer_NativePlayer_getDurationNative(JNIEnv *env, jobject thiz) {

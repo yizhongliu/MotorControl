@@ -367,11 +367,11 @@ public class MainActivity extends Activity {
         }
     }
 
-//    private void pause() {
-//        if (mPlayer != null) {
-//            mPlayer.pause();
-//        }
-//    }
+    private void pause() {
+        if (mPlayer != null) {
+            mPlayer.pause();
+        }
+    }
 //
 //    private void seek(int progress) {
 //        if (mPlayer != null) {
@@ -634,6 +634,16 @@ public class MainActivity extends Activity {
                     ipText.setVisibility(View.VISIBLE);
                 }
             });
+        }
+
+        @Override
+        public void play() {
+            mPlayer.start();
+        }
+
+        @Override
+        public void pause() {
+            mPlayer.pause();
         }
     }
 

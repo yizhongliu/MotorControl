@@ -44,6 +44,8 @@ public class ControlService extends Service {
     private final static int MSG_CONTROL_SHOW = 20;
     private final static int MSG_CONTROL_MOVE = 21;
     private final static int MSG_CONTROL_SET_PARAM = 22;
+    private final static int MSG_CONTROL_PLAYER_PAUSE = 23;
+    private final static int MSG_CONTROL_PLAYER_PLAY = 24;
 
     private final static int MSG_AUTORUNNING_START = 40;
     private final static int MSG_AUTORUNNING_STOP = 41;
@@ -258,6 +260,12 @@ public class ControlService extends Service {
                         String paramMessage = msg.getData().getString("message");
                         HandleSetParam(paramMessage);
                         break;
+                    case MSG_CONTROL_PLAYER_PAUSE:
+                        playCallBack.pause();
+                        break;
+                    case MSG_CONTROL_PLAYER_PLAY:
+                        playCallBack.play();
+                        break;
                 }
 
             }
@@ -324,6 +332,21 @@ public class ControlService extends Service {
                     } else if (action.equals(MsgType.ACTION_SET_PARAM)) {
                         Message showMessage = new Message();
                         showMessage.what = MSG_CONTROL_SET_PARAM;
+                        Bundle bundle = new Bundle();
+                        bundle.putString("message" , messge);
+                        showMessage.setData(bundle);
+                        mHandler.sendMessage(showMessage);
+                    }  else if (action.equals(MsgType.ACTION_PLAYER_PAUSE)) {
+                        Log.e(TAG, "MsgType.ACTION_PLAYER_PAUSE");
+                        Message showMessage = new Message();
+                        showMessage.what = MSG_CONTROL_PLAYER_PAUSE;
+                        Bundle bundle = new Bundle();
+                        bundle.putString("message" , messge);
+                        showMessage.setData(bundle);
+                        mHandler.sendMessage(showMessage);
+                    }  else if (action.equals(MsgType.ACTION_PLAYER_Play)) {
+                        Message showMessage = new Message();
+                        showMessage.what = MSG_CONTROL_PLAYER_PLAY;
                         Bundle bundle = new Bundle();
                         bundle.putString("message" , messge);
                         showMessage.setData(bundle);

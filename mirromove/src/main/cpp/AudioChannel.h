@@ -25,6 +25,8 @@ public:
 
     void stop();
 
+    void pause();
+
     void audio_decode();
 
     void audio_play();

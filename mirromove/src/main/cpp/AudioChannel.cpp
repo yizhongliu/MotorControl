@@ -49,12 +49,16 @@ void *task_audio_play(void *args) {
 void AudioChannel::start() {
     isPlaying = 1;
     //设置队列状态为工作状态
-    packets.setWork(1);
-    frames.setWork(1);
-    //解码
-    pthread_create(&pid_audio_decode, 0, task_audio_decode, this);
-    //播放
-    pthread_create(&pid_audio_play, 0, task_audio_play, this);
+    if (renderState != PLAYER_STATE_PAUSE) {
+        packets.setWork(1);
+        frames.setWork(1);
+        //解码
+        pthread_create(&pid_audio_decode, 0, task_audio_decode, this);
+        //播放
+        pthread_create(&pid_audio_play, 0, task_audio_play, this);
+    }
+
+    renderState = PLAYER_STATE_PLAYING;
 }
 
 
@@ -232,6 +236,12 @@ int AudioChannel::getPCM() {
 //    swr_init(swrContext);
 
     while (isPlaying) {
+
+        if (renderState == PLAYER_STATE_PAUSE) {
+            av_usleep(10 * 1000);
+            continue;
+        }
+
         int ret = frames.pop(frame);
         if (!isPlaying) {
             //如果停止播放了，跳出循环 释放packet
@@ -287,6 +297,7 @@ int AudioChannel::getPCM() {
  */
 void AudioChannel::stop() {
     isPlaying = 0;
+    renderState = PLAYER_STATE_STOP;
     javaCallHelper = 0;
     packets.setWork(0);
     frames.setWork(0);
@@ -319,5 +330,11 @@ void AudioChannel::stop() {
         (*engineObject)->Destroy(engineObject);
         engineObject = 0;
         engineInterface = 0;
+    }
+}
+
+void AudioChannel::pause() {
+    if (renderState == PLAYER_STATE_PLAYING) {
+        renderState = PLAYER_STATE_PAUSE;
     }
 }

@@ -70,18 +70,23 @@ void *task_video_play(void *args) {
 
 void VideoChannel::start() {
     isPlaying = 1;
-    //设置队列状态为工作状态
-    packets.setWork(1);
-    frames.setWork(1);
 
-    char args[256];
-    snprintf(args, sizeof(args), "rotate=%d*PI/180", rotate);
-    init_filter(args);
-    //可以进行解码播放？
-    //解码
-    pthread_create(&pid_video_decode, 0, task_video_decode, this);
-    //播放
-    pthread_create(&pid_video_play, 0, task_video_play, this);
+    if (renderState != PLAYER_STATE_PAUSE) {
+        //设置队列状态为工作状态
+        packets.setWork(1);
+        frames.setWork(1);
+
+        char args[256];
+        snprintf(args, sizeof(args), "rotate=%d*PI/180", rotate);
+        init_filter(args);
+        //可以进行解码播放？
+        //解码
+        pthread_create(&pid_video_decode, 0, task_video_decode, this);
+        //播放
+        pthread_create(&pid_video_play, 0, task_video_play, this);
+    }
+
+     renderState = PLAYER_STATE_PLAYING;
 }
 
 
@@ -89,7 +94,7 @@ void VideoChannel::start() {
  * 真正视频解码
  */
 void VideoChannel::video_decode() {
-    LOGE("enter : %s", __FUNCTION__);
+    LOGE("enter : %s", __PRETTY_FUNCTION__);
     AVPacket *packet = 0;
     int ret;
     while (isPlaying) {
@@ -164,11 +169,11 @@ void VideoChannel::video_decode() {
     }//end while
     releaseAVPacket(&packet);
 
-    LOGE("leave : %s", __FUNCTION__);
+    LOGE("leave : %s", __PRETTY_FUNCTION__);
 }
 
 void VideoChannel::video_play() {
-    LOGE("enter : %s", __FUNCTION__);
+    LOGE("enter : %s", __PRETTY_FUNCTION__);
     AVFrame *frame = 0;
     //要注意对原始数据进行格式转换：yuv > rgba
     // yuv: 400x800 > rgba: 400x800
@@ -193,6 +198,10 @@ void VideoChannel::video_play() {
     double video_time;
 
     while (isPlaying) {
+        if (renderState == PLAYER_STATE_PAUSE) {
+            av_usleep(10 * 1000);
+            continue;
+        }
         ret = frames.pop(frame);
         if (!isPlaying) {
             //如果停止播放了，跳出循环 释放packet
@@ -275,11 +284,12 @@ void VideoChannel::video_play() {
     }
     releaseAVFrame(&frame);
     isPlaying = 0;
+    renderState = PLAYER_STATE_STOP;
     av_freep(&dst_data[0]);
     sws_freeContext(sws_ctx);
     //MediaCodec
 
-    LOGE("leave : %s", __FUNCTION__);
+    LOGE("leave : %s", __PRETTY_FUNCTION__);
 }
 
 void VideoChannel::setRenderCallback(RenderCallback callback) {
@@ -292,6 +302,7 @@ void VideoChannel::setAudioChannel(AudioChannel *audioChannel) {
 
 void VideoChannel::stop() {
     isPlaying = 0;
+    renderState = PLAYER_STATE_STOP;
     javaCallHelper = 0;
     packets.setWork(0);
     frames.setWork(0);
@@ -300,6 +311,12 @@ void VideoChannel::stop() {
 
     avfilter_graph_free(&filter_graph);
     filter_graph = 0;
+}
+
+void VideoChannel::pause() {
+    if (renderState == PLAYER_STATE_PLAYING) {
+        renderState = PLAYER_STATE_PAUSE;
+    }
 }
 
 int VideoChannel::init_filter(const char *filters_descr) {

@@ -30,6 +30,8 @@ public:
 
     void stop();
 
+    void pause();
+
     void video_decode();
 
     void video_play();

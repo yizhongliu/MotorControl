@@ -37,6 +37,8 @@ public:
 
     void stop();
 
+    void pause();
+
 private:
     JavaCallHelper *javaCallHelper = 0;
     AudioChannel *audioChannel = 0;
@@ -56,6 +58,8 @@ private:
 
     //视频播放旋转角度
     int rotate = 0;
+
+    int playState = PLAYER_STATE_STOP;
 public:
     void setDuration(int duration);
 

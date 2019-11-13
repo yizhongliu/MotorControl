@@ -117,6 +117,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         pathStartButton = findViewById(R.id.pathStart);
         pathStartButton.setOnClickListener(this);
         pathStopButtonn = findViewById(R.id.pathStop);
+        pathStopButtonn.setOnClickListener(this);
 
         pathUpButton = findViewById(R.id.up);
         pathUpButton.setOnClickListener(this);
@@ -215,10 +216,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
                 break;
             case R.id.pathStart:
+//                JSONObject jsonObject3 = new JSONObject();
+//                try {
+//                    jsonObject3.put("type", "PathPlanning");
+//                    jsonObject3.put("action", "Start");
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//
+//                final String msg3 = jsonObject3.toString();
+//                exec.execute(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        tcpClient.send(msg3);
+//                    }
+//                });
                 JSONObject jsonObject3 = new JSONObject();
                 try {
-                    jsonObject3.put("type", "PathPlanning");
-                    jsonObject3.put("action", "Start");
+                    jsonObject3.put("type", "Control");
+                    jsonObject3.put("action", "Play");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -233,10 +249,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.pathStop:
+//                JSONObject jsonObject4 = new JSONObject();
+//                try {
+//                    jsonObject4.put("type", "PathPlanning");
+//                    jsonObject4.put("action", "Stop");
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//
+//                final String msg4 = jsonObject4.toString();
+//                exec.execute(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        tcpClient.send(msg4);
+//                    }
+//                });
+
                 JSONObject jsonObject4 = new JSONObject();
                 try {
-                    jsonObject4.put("type", "PathPlanning");
-                    jsonObject4.put("action", "Stop");
+                    jsonObject4.put("type", "Control");
+                    jsonObject4.put("action", "Pause");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
