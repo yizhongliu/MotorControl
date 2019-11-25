@@ -121,6 +121,7 @@ public class MainActivity extends Activity {
         }
 
 
+
         Intent socketIntent = new Intent(this, SocketService.class);
         bindService(socketIntent, socketConnection, BIND_AUTO_CREATE);
 
@@ -130,6 +131,13 @@ public class MainActivity extends Activity {
         Intent controlIntent = new Intent(this, ControlService.class);
         bindService(controlIntent, controlConnection, BIND_AUTO_CREATE);
 
+
+
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        test();
     }
 
     @Override
@@ -678,5 +686,18 @@ public class MainActivity extends Activity {
         }
         finish();
         return;
+    }
+
+    public void test() {
+        String absUrl =  Environment.getExternalStorageDirectory() + "/test.mp4";
+        mPlayer.setDataSource(absUrl);
+        mPlayer.setRotate(30);
+
+        if (bVideoShow) {
+            mPlayer.setSurface(mVideoSurface);
+            mPlayer.prepare();
+        } else {
+            surfaceView.setVisibility(View.VISIBLE);
+        }
     }
 }
